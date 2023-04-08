@@ -1,11 +1,11 @@
 CC = cc
 CXX = c++
-CINC = `pkg-config --cflags sdl2 SDL2_net`
+CINC = `pkg-config --cflags sdl2 SDL2_net SDL2_ttf`
 CXXINC = `pkg-config --cflags opencv4 libavformat libavcodec libavutil`
 STDC = -std=c11
 CFLAGS = $(CINC) -g -D_XOPEN_SOURCE=700 -O0
 CXXFLAGS = $(CXXINC) $(CFLAGS)
-LDFLAGS = `pkg-config --libs opencv4 sdl2 SDL2_net libavformat libavcodec libavutil`
+LDFLAGS = `pkg-config --libs opencv4 sdl2 SDL2_net SDL2_ttf libavformat libavcodec libavutil`
 
 BIN = kokanyctl
 
