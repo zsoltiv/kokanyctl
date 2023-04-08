@@ -1,0 +1,5 @@
+kokanyctl
+compile_commands.json
+build
+build/*
+.cache
