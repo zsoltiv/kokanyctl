@@ -1,7 +1,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <stdlib.h>
 
 #include "SDL.h"
 #include "SDL_pixels.h"
@@ -10,14 +9,7 @@
 #include "SDL_ttf.h"
 #include "SDL_net.h"
 
-void ctl_die(const char *fmt, ...)
-{
-    va_list arg;
-    va_start(arg, fmt);
-    vfprintf(stderr, fmt, arg);
-    va_end(arg);
-    exit(1);
-}
+#include "utils.h"
 
 uint8_t encode_scancode(uint8_t scancode, bool pressed)
 {
