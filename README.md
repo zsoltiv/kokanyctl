@@ -2,4 +2,6 @@
 
 This program controls Kókánybot over a network.
 
-It uses two sockets, a receiving one and a client. The receiving socket is where the video data comes in, and the client sends commands to the robot.
+It uses multiple sockets for sending and receiving data.
+
+The [undefined-medium](https://undefined-medium.com/) font is used for displaying information.
