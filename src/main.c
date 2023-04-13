@@ -9,6 +9,7 @@
 #include "SDL_ttf.h"
 #include "SDL_net.h"
 
+#include "net.h"
 #include "utils.h"
 
 uint8_t encode_scancode(uint8_t scancode, bool pressed)
@@ -41,6 +42,8 @@ int main(void)
     if(!rend)
         ctl_die("SDL renderer creation error: %s\n", SDL_GetError());
 
+    IPaddress local;
+    net_get_local_address(&local);
     SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 
     int key_count;
