@@ -29,43 +29,51 @@ struct image {
     uint8_t *bgr[4];
 };
 
+struct av {
+    /*
+     * libav* stuff
+    */
+    AVFormatContext *fmt;
+    AVCodecContext *decoder;
+    AVPacket *pkt;
+    struct SwsContext *sws;
+};
+
 struct video_data {
+    struct av av;
     // shared data
     SDL_mutex *lock;
     struct image img;
 };
 
-static AVFormatContext *fmt;
-static AVCodecContext *decoder;
-static AVPacket *pkt;
-static struct SwsContext *sws = NULL;
-
 struct video_data *video_init(void)
 {
+    struct video_data *video = malloc(sizeof(struct video_data));
+    struct av *av = &video->av; // alias for simplicity
     avformat_network_init();
-    fmt = avformat_alloc_context();
-    if(avformat_open_input(&fmt, REMOTE, NULL, NULL) < 0)
+    av->fmt = avformat_alloc_context();
+    if(avformat_open_input(&av->fmt, REMOTE, NULL, NULL) < 0)
         fprintf(stderr, "avformat_open_input() failed\n");
-    fprintf(stderr, "Format: %s\n", fmt->iformat->long_name);
-    if(avformat_find_stream_info(fmt, NULL) < 0)
+    fprintf(stderr, "Format: %s\n", av->fmt->iformat->long_name);
+    if(avformat_find_stream_info(av->fmt, NULL) < 0)
         fprintf(stderr, "avformat_find_stream_info() failed\n");
 
-    if(fmt->nb_streams != 1)
+    if(av->fmt->nb_streams != 1)
         ctl_die("Too many streams!\n");
-    AVStream *stream = fmt->streams[0];
+    AVStream *stream = av->fmt->streams[0];
     if(stream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
         ctl_die("Not a video stream!\n");
     const AVCodec *codec = avcodec_find_decoder(stream->codecpar->codec_id);
     fprintf(stderr, "Using decoder %s\n", codec->long_name);
-    decoder = avcodec_alloc_context3(codec);
-    avcodec_parameters_to_context(decoder, stream->codecpar);
-    avcodec_open2(decoder, codec, NULL);
-    sws = sws_getCachedContext(sws,
-                               decoder->width,
-                               decoder->height,
-                               decoder->pix_fmt,
-                               decoder->width,
-                               decoder->height,
+    av->decoder = avcodec_alloc_context3(codec);
+    avcodec_parameters_to_context(av->decoder, stream->codecpar);
+    avcodec_open2(av->decoder, codec, NULL);
+    av->sws = sws_getCachedContext(av->sws,
+                               av->decoder->width,
+                               av->decoder->height,
+                               av->decoder->pix_fmt,
+                               av->decoder->width,
+                               av->decoder->height,
                                AV_PIX_FMT_BGR24,
                                SWS_ACCURATE_RND | SWS_FULL_CHR_H_INT,
                                NULL,
@@ -73,11 +81,10 @@ struct video_data *video_init(void)
                                NULL);
     fprintf(stderr, "swscale initialized!\n");
 
-    pkt = av_packet_alloc();
-    struct video_data *video_data = malloc(sizeof(struct video_data));
-    video_data->lock = SDL_CreateMutex();
+    av->pkt = av_packet_alloc();
+    video->lock = SDL_CreateMutex();
 
-    return video_data;
+    return video;
 }
 
 void video_lock(struct video_data *video_data)
@@ -92,15 +99,17 @@ void video_unlock(struct video_data *video_data)
 int video_thread(void *arg)
 {
     struct video_data *video_data = (struct video_data *)arg;
+    struct av *av = &video_data->av;
+
     AVFrame *decoded = av_frame_alloc();
     int ret;
 
     while(1) {
-        if((ret = av_read_frame(fmt, pkt)) < 0)
+        if((ret = av_read_frame(av->fmt, av->pkt)) < 0)
             fprintf(stderr, "av_read_frame() failed\n");
-        if((ret = avcodec_send_packet(decoder, pkt)) < 0)
+        if((ret = avcodec_send_packet(av->decoder, av->pkt)) < 0)
             fprintf(stderr, "avcodec_send_packet() failed\n");
-        if((ret = avcodec_receive_frame(decoder, decoded)) < 0) {
+        if((ret = avcodec_receive_frame(av->decoder, decoded)) < 0) {
             if(ret == AVERROR(EAGAIN))
                 continue;
             fprintf(stderr, "avcodec_receive_frame() failed\n");
@@ -116,7 +125,7 @@ int video_thread(void *arg)
                              1);
         if(ret < 0)
             fprintf(stderr, "av_image_alloc() failed\n");
-        sws_scale(sws,
+        sws_scale(av->sws,
                   (const uint8_t *const *)decoded->data,
                   decoded->linesize,
                   0,
