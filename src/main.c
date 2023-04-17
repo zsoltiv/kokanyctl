@@ -3,13 +3,11 @@
 #include <stdbool.h>
 
 #include "SDL.h"
-#include "SDL_pixels.h"
-#include "SDL_render.h"
-#include "SDL_surface.h"
 #include "SDL_ttf.h"
 #include "SDL_net.h"
 
 #include "net.h"
+#include "video.h"
 #include "utils.h"
 
 uint8_t encode_scancode(uint8_t scancode, bool pressed)
@@ -42,9 +40,12 @@ int main(void)
     if(!rend)
         ctl_die("SDL renderer creation error: %s\n", SDL_GetError());
 
-    IPaddress local;
-    net_get_local_address(&local);
+    //IPaddress local;
+    //net_get_local_address(&local);
     SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
+
+    struct video_data *video_data = video_init();
+    SDL_CreateThread(video_thread, "video", video_data);
 
     int key_count;
     const uint8_t *keys = SDL_GetKeyboardState(&key_count);
