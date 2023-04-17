@@ -60,6 +60,18 @@ struct video_data *video_init(void)
     decoder = avcodec_alloc_context3(codec);
     avcodec_parameters_to_context(decoder, stream->codecpar);
     avcodec_open2(decoder, codec, NULL);
+    sws = sws_getCachedContext(sws,
+                               decoder->width,
+                               decoder->height,
+                               decoder->pix_fmt,
+                               decoder->width,
+                               decoder->height,
+                               AV_PIX_FMT_BGR24,
+                               SWS_ACCURATE_RND | SWS_FULL_CHR_H_INT,
+                               NULL,
+                               NULL,
+                               NULL);
+    fprintf(stderr, "swscale initialized!\n");
 
     pkt = av_packet_alloc();
     struct video_data *video_data = malloc(sizeof(struct video_data));
@@ -94,20 +106,6 @@ int video_thread(void *arg)
             fprintf(stderr, "avcodec_receive_frame() failed\n");
         }
         printf("width: %d height: %d\n", decoded->width, decoded->height);
-        if(!sws) {
-            sws = sws_getCachedContext(sws,
-                                       decoded->width,
-                                       decoded->height,
-                                       decoder->pix_fmt,
-                                       decoded->width,
-                                       decoded->height,
-                                       AV_PIX_FMT_BGR24,
-                                       SWS_ACCURATE_RND | SWS_FULL_CHR_H_INT,
-                                       NULL,
-                                       NULL,
-                                       NULL);
-            fprintf(stderr, "swscale initialized!\n");
-        }
         video_data->img.width = decoded->width;
         video_data->img.height = decoded->height;
         ret = av_image_alloc(video_data->img.bgr,
