@@ -23,8 +23,8 @@ struct image {
     int width, height, references;
     int linesizes[4];
     /*
-     * one uint8_t* per plane
-     * but `sws_scale` expects an array of 4
+     * must be an array of 4 because of `av_image_alloc`'s prototype
+     * only the first pointer is used
     */
     uint8_t *bgr[4];
 };
@@ -55,7 +55,7 @@ struct video_data *video_init(void)
     AVStream *stream = fmt->streams[0];
     if(stream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
         ctl_die("Not a video stream!\n");
-    AVCodec *codec = avcodec_find_decoder(stream->codecpar->codec_id);
+    const AVCodec *codec = avcodec_find_decoder(stream->codecpar->codec_id);
     fprintf(stderr, "Using decoder %s\n", codec->long_name);
     decoder = avcodec_alloc_context3(codec);
     avcodec_parameters_to_context(decoder, stream->codecpar);
