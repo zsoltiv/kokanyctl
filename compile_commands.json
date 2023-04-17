@@ -1,0 +1,20 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-c",
+      "-std=c11",
+      "-I/usr/include/SDL2",
+      "-D_REENTRANT",
+      "-g",
+      "-D_XOPEN_SOURCE=700",
+      "-O0",
+      "-o",
+      "build/video.c.o",
+      "src/video.c"
+    ],
+    "directory": "/home/zsolti/projects/kokanyctl",
+    "file": "/home/zsolti/projects/kokanyctl/src/video.c",
+    "output": "/home/zsolti/projects/kokanyctl/build/video.c.o"
+  }
+]
