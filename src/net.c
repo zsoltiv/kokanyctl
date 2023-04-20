@@ -1,4 +1,6 @@
 #include <ifaddrs.h>
+#include <stdio.h>
+#include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -11,41 +13,40 @@
 
 #include "net.h"
 
-#define NET_WIRELESS "wlan0"
-#define NET_ETHERNET "eth0"
-#define NET_PORT 1337u
+#define NET_PORT 1337
 #define NET_FFMPEG_PROTO "tcp://"
 #define NET_FFMPEG_OPTS "?listen=1"
 #define NET_REMOTE "192.168.0.99"
 
-void net_get_local_address(IPaddress *ip)
+TCPsocket net_connect_to_remote(void)
 {
-    struct ifaddrs *interfaces, *ifap;
-    getifaddrs(&interfaces);
-    ifap = interfaces;
-    do {
-        if((!strcmp(NET_WIRELESS, ifap->ifa_name) ||
-            !strcmp(NET_ETHERNET, ifap->ifa_name)) &&
-           ifap->ifa_addr->sa_family == AF_INET)
-            break;
-    } while((ifap = ifap->ifa_next));
-    if(!ifap)
-        ctl_die("net_get_local_address(): no interfaces named %s and %s\n",
-                NET_WIRELESS,
-                NET_ETHERNET);
-    struct sockaddr_in *inaddr = (struct sockaddr_in *)ifap->ifa_addr;
-    ip->host = inaddr->sin_addr.s_addr;
-    freeifaddrs(interfaces);
+    IPaddress remote;
+    if(SDLNet_ResolveHost(&remote, NET_REMOTE, htons(NET_PORT)) < 0)
+        ctl_die("SDLNet_ResolveHost(): %s\n", SDLNet_GetError());
+    printf("%u:%u\n", remote.host, remote.port);
+    fflush(stdout);
+    TCPsocket sock =  SDLNet_TCP_Open(&remote);
+    if(!sock)
+        ctl_die("SDLNet_TCP_Open(): %s\n", SDLNet_GetError());
+
+    return sock;
 }
 
-void net_resolve_kokanybot(IPaddress *ip)
+void net_send_keycode(TCPsocket remote, uint8_t keycode)
 {
-    SDLNet_ResolveHost(ip, NET_REMOTE, 0);
+    printf("sending %u\n", keycode);
+    if(SDLNet_TCP_Send(remote,
+                       &keycode,
+                       1) < 1)
+        ctl_die("SDLNet_TCP_Send(): %s", SDLNet_GetError());
+
 }
 
 uint8_t net_encode_scancode(uint8_t scancode, bool pressed)
 {
-    return (uint8_t)SDL_GetKeyFromScancode(scancode) | (uint8_t)(pressed << 7);
+    uint8_t pressed_u8 = pressed << 7;
+    assert(pressed_u8 == 0x80 || pressed_u8 == 0);
+    return (uint8_t)SDL_GetKeyFromScancode(scancode) | pressed_u8;
 }
 
 const char *net_ffmpeg_format_url(IPaddress *ip)

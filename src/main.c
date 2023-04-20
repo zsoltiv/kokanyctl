@@ -10,11 +10,6 @@
 #include "video.h"
 #include "utils.h"
 
-uint8_t encode_scancode(uint8_t scancode, bool pressed)
-{
-    return (uint8_t)SDL_GetKeyFromScancode(scancode) | (uint8_t)(pressed << 7);
-}
-
 int main(void)
 {
     if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0)
@@ -40,12 +35,11 @@ int main(void)
     if(!rend)
         ctl_die("SDL renderer creation error: %s\n", SDL_GetError());
 
-    //IPaddress local;
-    //net_get_local_address(&local);
+    TCPsocket remote = net_connect_to_remote();
     SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 
-    struct video_data *video_data = video_init();
-    SDL_CreateThread(video_thread, "video", video_data);
+    //struct video_data *video_data = video_init();
+    //SDL_CreateThread(video_thread, "video", video_data);
 
     int key_count;
     const uint8_t *keys = SDL_GetKeyboardState(&key_count);
@@ -63,6 +57,9 @@ int main(void)
 
         SDL_RenderCopy(rend, text, NULL, &textrect);
         
+        if(keys[SDL_SCANCODE_W]) {
+            net_send_keycode(remote, net_encode_scancode(SDL_SCANCODE_W, true));
+        }
         if(keys[SDL_SCANCODE_Q])
             break;
         // render

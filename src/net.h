@@ -6,9 +6,9 @@
 
 #include "SDL_net.h"
 
-void net_get_local_address(IPaddress *ip);
-void net_resolve_kokanybot(IPaddress *ip);
+TCPsocket net_connect_to_remote(void);
 uint8_t net_encode_scancode(uint8_t scancode, bool pressed);
+void net_send_keycode(TCPsocket remote, uint8_t keycode);
 const char *net_ffmpeg_format_url(IPaddress *ip);
 
 #endif /* NET_H */
