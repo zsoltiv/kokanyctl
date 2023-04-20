@@ -55,7 +55,7 @@ const char *net_ffmpeg_format_url(IPaddress *ip)
     char *buf = calloc(total + 1, 1);
     snprintf(buf,
              total,
-             "%s%s:%s%s",
+             "%s%s%s%s",
              NET_FFMPEG_PROTO,
              ip_string,
              port,
