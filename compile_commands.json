@@ -10,11 +10,83 @@
       "-D_XOPEN_SOURCE=700",
       "-O0",
       "-o",
+      "build/utils.c.o",
+      "src/utils.c"
+    ],
+    "directory": "/home/zsolti/projects/kokanyctl",
+    "file": "/home/zsolti/projects/kokanyctl/src/utils.c",
+    "output": "/home/zsolti/projects/kokanyctl/build/utils.c.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-c",
+      "-std=c11",
+      "-I/usr/include/SDL2",
+      "-D_REENTRANT",
+      "-g",
+      "-D_XOPEN_SOURCE=700",
+      "-O0",
+      "-o",
       "build/video.c.o",
       "src/video.c"
     ],
     "directory": "/home/zsolti/projects/kokanyctl",
     "file": "/home/zsolti/projects/kokanyctl/src/video.c",
     "output": "/home/zsolti/projects/kokanyctl/build/video.c.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-c",
+      "-std=c11",
+      "-I/usr/include/SDL2",
+      "-D_REENTRANT",
+      "-g",
+      "-D_XOPEN_SOURCE=700",
+      "-O0",
+      "-o",
+      "build/net.c.o",
+      "src/net.c"
+    ],
+    "directory": "/home/zsolti/projects/kokanyctl",
+    "file": "/home/zsolti/projects/kokanyctl/src/net.c",
+    "output": "/home/zsolti/projects/kokanyctl/build/net.c.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-c",
+      "-std=c11",
+      "-I/usr/include/SDL2",
+      "-D_REENTRANT",
+      "-g",
+      "-D_XOPEN_SOURCE=700",
+      "-O0",
+      "-o",
+      "build/main.c.o",
+      "src/main.c"
+    ],
+    "directory": "/home/zsolti/projects/kokanyctl",
+    "file": "/home/zsolti/projects/kokanyctl/src/main.c",
+    "output": "/home/zsolti/projects/kokanyctl/build/main.c.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/c++",
+      "-c",
+      "-I/usr/include/opencv4",
+      "-I/usr/include/SDL2",
+      "-D_REENTRANT",
+      "-g",
+      "-D_XOPEN_SOURCE=700",
+      "-O0",
+      "-o",
+      "build/imgproc.cpp.o",
+      "src/imgproc.cpp"
+    ],
+    "directory": "/home/zsolti/projects/kokanyctl",
+    "file": "/home/zsolti/projects/kokanyctl/src/imgproc.cpp",
+    "output": "/home/zsolti/projects/kokanyctl/build/imgproc.cpp.o"
   }
 ]
