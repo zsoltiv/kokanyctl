@@ -10,6 +10,11 @@
 #include "video.h"
 #include "utils.h"
 
+// FIXME use kokanybot's static address
+#define REMOTE "127.0.0.1"
+#define PORT_CTL 1337
+#define PORT_VIDEO 1338
+
 int main(void)
 {
     if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0)
@@ -35,7 +40,9 @@ int main(void)
     if(!rend)
         ctl_die("SDL renderer creation error: %s\n", SDL_GetError());
 
-    TCPsocket remote = net_connect_to_remote();
+    IPaddress ctl_addr = net_resolve_host(REMOTE, PORT_CTL);
+    IPaddress video_addr = net_resolve_host(REMOTE, PORT_VIDEO);
+    TCPsocket remote = net_connect_to_remote(&ctl_addr);
     SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 
     //struct video_data *video_data = video_init();

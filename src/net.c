@@ -13,19 +13,14 @@
 
 #include "net.h"
 
-#define NET_PORT 1337
 #define NET_FFMPEG_PROTO "tcp://"
 #define NET_FFMPEG_OPTS "?listen=1"
-#define NET_REMOTE "192.168.0.99"
 
-TCPsocket net_connect_to_remote(void)
+TCPsocket net_connect_to_remote(IPaddress *remote)
 {
-    IPaddress remote;
-    if(SDLNet_ResolveHost(&remote, NET_REMOTE, htons(NET_PORT)) < 0)
-        ctl_die("SDLNet_ResolveHost(): %s\n", SDLNet_GetError());
-    printf("%u:%u\n", remote.host, remote.port);
+    printf("%u:%u\n", remote->host, remote->port);
     fflush(stdout);
-    TCPsocket sock =  SDLNet_TCP_Open(&remote);
+    TCPsocket sock =  SDLNet_TCP_Open(remote);
     if(!sock)
         ctl_die("SDLNet_TCP_Open(): %s\n", SDLNet_GetError());
 
@@ -63,7 +58,7 @@ const char *net_ffmpeg_format_url(IPaddress *ip)
         return NULL;
 
     char port[13] = {0};
-    snprintf(port, sizeof(port), ":%u", NET_PORT);
+    snprintf(port, sizeof(port), ":%u", ntohs(ip->port));
 
     size_t port_sz = strlen(port);
     size_t ip_sz = strlen(ip_string);
