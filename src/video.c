@@ -20,7 +20,7 @@
 #define REMOTE "tcp://127.0.0.1:1337" REMOTE_OPTS
 
 struct image {
-    int width, height, references;
+    int references;
     int linesizes[4];
     /*
      * must be an array of 4 because of `av_image_alloc`'s prototype
@@ -42,9 +42,20 @@ struct av {
 struct video_data {
     struct av av;
     // shared data
+    int width, height;
     SDL_mutex *lock;
     struct image img;
 };
+
+int video_get_width(struct video_data *video_data)
+{
+    return video_data->width;
+}
+
+int video_get_height(struct video_data *video_data)
+{
+    return video_data->height;
+}
 
 struct video_data *video_init(void)
 {
@@ -67,13 +78,15 @@ struct video_data *video_init(void)
     fprintf(stderr, "Using decoder %s\n", codec->long_name);
     av->decoder = avcodec_alloc_context3(codec);
     avcodec_parameters_to_context(av->decoder, stream->codecpar);
+    video->width = av->decoder->width;
+    video->height = av->decoder->height;
     avcodec_open2(av->decoder, codec, NULL);
     av->sws = sws_getCachedContext(av->sws,
                                av->decoder->width,
                                av->decoder->height,
                                av->decoder->pix_fmt,
-                               av->decoder->width,
-                               av->decoder->height,
+                               video->width,
+                               video->height,
                                AV_PIX_FMT_BGR24,
                                SWS_ACCURATE_RND | SWS_FULL_CHR_H_INT,
                                NULL,
@@ -115,12 +128,10 @@ int video_thread(void *arg)
             fprintf(stderr, "avcodec_receive_frame() failed\n");
         }
         printf("width: %d height: %d\n", decoded->width, decoded->height);
-        video_data->img.width = decoded->width;
-        video_data->img.height = decoded->height;
         ret = av_image_alloc(video_data->img.bgr,
                              video_data->img.linesizes,
-                             video_data->img.width,
-                             video_data->img.height,
+                             video_data->width,
+                             video_data->height,
                              AV_PIX_FMT_BGR24,
                              1);
         if(ret < 0)
