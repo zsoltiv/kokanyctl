@@ -10,6 +10,7 @@ extern "C" {
 
 #include "SDL_net.h"
 
+IPaddress net_resolve_host(const char *remote, uint16_t port);
 TCPsocket net_connect_to_remote(void);
 uint8_t net_encode_scancode(uint8_t scancode, bool pressed);
 void net_send_keycode(TCPsocket remote, uint8_t keycode);

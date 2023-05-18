@@ -32,6 +32,13 @@ TCPsocket net_connect_to_remote(void)
     return sock;
 }
 
+IPaddress net_resolve_host(const char *remote, uint16_t port)
+{
+    IPaddress ip;
+    SDLNet_ResolveHost(&ip, remote, htons(port));
+    return ip;
+}
+
 void net_send_keycode(TCPsocket remote, uint8_t keycode)
 {
     printf("sending %u\n", keycode);
