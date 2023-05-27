@@ -36,6 +36,8 @@ extern "C" void imgproc_thread(void *arg)
 {
     struct imgproc_data *imgproc = (struct imgproc_data *)arg;
 
+    while(!imgproc->cap.isOpened());
+
     while(true) {
     }
 }
