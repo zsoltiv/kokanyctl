@@ -1,19 +1,30 @@
 #include <cstdlib>
+#include <cstring>
+#include <vector>
+#include <errno.h>
+#include <dirent.h>
+#include <sys/types.h>
 
 #include "SDL_net.h"
 #include "opencv2/core.hpp"
 #include "opencv2/videoio.hpp"
 #include "opencv2/features2d.hpp"
 #include "opencv2/imgproc.hpp"
+#include "opencv2/imgcodecs.hpp"
 
 #include "net.h"
+#include "utils.h"
 #include "video.h"
 #include "imgproc.h"
+
+#define HAZMAT_DIR "hazmat"
 
 struct imgproc_data {
     cv::VideoCapture cap;
     cv::Ptr<cv::FeatureDetector> detector;
     cv::BFMatcher matcher;
+    std::vector<std::vector<cv::KeyPoint>> hazmat_keypoints;
+    std::vector<cv::Mat> hazmat_descriptors;
 };
 
 extern "C" struct imgproc_data *imgproc_init(struct video_data *video_data, IPaddress *video_addr)
@@ -28,6 +39,23 @@ extern "C" struct imgproc_data *imgproc_init(struct video_data *video_data, IPad
 
     imgproc->detector = cv::ORB::create();
     imgproc->matcher = cv::BFMatcher();
+
+    DIR *dir = opendir(HAZMAT_DIR);
+    if(!dir)
+        ctl_die((const char *) "opendir()\n");
+    struct dirent *e;
+    while((e = readdir(dir))) {
+        std::string path(HAZMAT_DIR);
+        path += '/';
+        path += e->d_name;
+        cv::Mat img = cv::imread(path);
+        std::vector<cv::KeyPoint> keypoints;
+        cv::Mat descriptors;
+        imgproc->detector->detectAndCompute(img, cv::noArray(), keypoints, descriptors);
+        imgproc->hazmat_descriptors.push_back(descriptors);
+        imgproc->hazmat_keypoints.push_back(keypoints);
+    }
+    closedir(dir);
 
     return imgproc;
 }
