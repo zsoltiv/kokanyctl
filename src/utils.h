@@ -1,7 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#ifdef __cplus_plus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -9,7 +9,7 @@ extern "C" {
 
 void ctl_die(const char *fmt, ...);
 
-#ifdef __cplus_plus
+#ifdef __cplusplus
 }
 #endif
 
