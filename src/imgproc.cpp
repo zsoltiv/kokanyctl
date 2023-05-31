@@ -38,7 +38,7 @@ extern "C" struct imgproc_data *imgproc_init(struct video_data *video_data, IPad
     imgproc->cap.set(cv::CAP_PROP_FPS, 24);
 
     imgproc->detector = cv::ORB::create();
-    imgproc->matcher = cv::BFMatcher();
+    imgproc->matcher = cv::BFMatcher(cv::NORM_HAMMING);
 
     DIR *dir = opendir(HAZMAT_DIR);
     if(!dir)
@@ -63,9 +63,17 @@ extern "C" struct imgproc_data *imgproc_init(struct video_data *video_data, IPad
 extern "C" void imgproc_thread(void *arg)
 {
     struct imgproc_data *imgproc = (struct imgproc_data *)arg;
+    cv::Mat frame, descriptors;
+    std::vector<cv::KeyPoint> keypoints;
 
     while(!imgproc->cap.isOpened());
 
     while(true) {
+        imgproc->cap >> frame;
+        imgproc->detector.detectAndCompute(frame, cv::noArray(), keypoints, descriptors);
+        for(int i = 0; i < imgproc->hazmat_keypoints.size(); i++) {
+            std::vector<cv::DMatch> matches;
+            imgproc->matcher.match(imgproc->hazmat_descriptors[i], descriptors, matches);
+        }
     }
 }
