@@ -70,7 +70,7 @@ extern "C" void imgproc_thread(void *arg)
 
     while(true) {
         imgproc->cap >> frame;
-        imgproc->detector.detectAndCompute(frame, cv::noArray(), keypoints, descriptors);
+        imgproc->detector->detectAndCompute(frame, cv::noArray(), keypoints, descriptors);
         for(int i = 0; i < imgproc->hazmat_keypoints.size(); i++) {
             std::vector<cv::DMatch> matches;
             imgproc->matcher.match(imgproc->hazmat_descriptors[i], descriptors, matches);
