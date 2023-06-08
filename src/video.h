@@ -5,14 +5,18 @@
 extern "C" {
 #endif
 
+#include "SDL.h"
+
 // FIXME set to the same as in kokanybot
 #define FRAMES_PER_SEC 24
 
 struct video_data;
 
-struct video_data *video_init(void);
+struct video_data *video_init(SDL_Renderer *rend);
 void video_lock(struct video_data *video_data);
 void video_unlock(struct video_data *video_data);
+SDL_Texture *video_get_screen(struct video_data *video_data);
+void video_update_screen(struct video_data *video_data);
 int video_get_width(struct video_data *video_data);
 int video_get_height(struct video_data *video_data);
 int video_thread(void *arg);

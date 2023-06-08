@@ -1,5 +1,7 @@
+#include <libavutil/frame.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
@@ -7,6 +9,7 @@
 #include <libavutil/imgutils.h>
 #include "SDL.h"
 
+#include "SDL_render.h"
 #include "utils.h"
 #include "video.h"
 
@@ -20,13 +23,8 @@
 #define REMOTE "tcp://127.0.0.1:1337" REMOTE_OPTS
 
 struct image {
-    int references;
-    int linesizes[4];
-    /*
-     * must be an array of 4 because of `av_image_alloc`'s prototype
-     * only the first pointer is used
-    */
-    uint8_t *bgr[4];
+    AVFrame *decoded;
+    int pitch;
 };
 
 struct av {
@@ -36,7 +34,6 @@ struct av {
     AVFormatContext *fmt;
     AVCodecContext *decoder;
     AVPacket *pkt;
-    struct SwsContext *sws;
 };
 
 struct video_data {
@@ -44,6 +41,7 @@ struct video_data {
     // shared data
     int width, height;
     SDL_mutex *lock;
+    SDL_Texture *screen;
     struct image img;
 };
 
@@ -57,7 +55,24 @@ int video_get_height(struct video_data *video_data)
     return video_data->height;
 }
 
-struct video_data *video_init(void)
+SDL_Texture *video_get_screen(struct video_data *video_data)
+{
+    return video_data->screen;
+}
+
+// must be called from main thread
+void video_update_screen(struct video_data *video_data)
+{
+    SDL_UpdateYUVTexture(video_data->screen, NULL,
+                         video_data->img.decoded->data[0],
+                         video_data->img.decoded->linesize[0],
+                         video_data->img.decoded->data[1],
+                         video_data->img.decoded->linesize[1],
+                         video_data->img.decoded->data[2],
+                         video_data->img.decoded->linesize[2]);
+}
+
+struct video_data *video_init(SDL_Renderer *rend)
 {
     struct video_data *video = malloc(sizeof(struct video_data));
     struct av *av = &video->av; // alias for simplicity
@@ -81,21 +96,21 @@ struct video_data *video_init(void)
     video->width = av->decoder->width;
     video->height = av->decoder->height;
     avcodec_open2(av->decoder, codec, NULL);
-    av->sws = sws_getCachedContext(av->sws,
-                               av->decoder->width,
-                               av->decoder->height,
-                               av->decoder->pix_fmt,
-                               video->width,
-                               video->height,
-                               AV_PIX_FMT_BGR24,
-                               SWS_ACCURATE_RND | SWS_FULL_CHR_H_INT,
-                               NULL,
-                               NULL,
-                               NULL);
     fprintf(stderr, "swscale initialized!\n");
 
     av->pkt = av_packet_alloc();
+    video->img.decoded = av_frame_alloc();
     video->lock = SDL_CreateMutex();
+
+    assert(av->decoder->pix_fmt == AV_PIX_FMT_YUV420P);
+
+    video->screen = SDL_CreateTexture(rend,
+                                      SDL_PIXELFORMAT_IYUV,
+                                      SDL_TEXTUREACCESS_STREAMING,
+                                      video->width,
+                                      video->height);
+    if(!video->screen)
+        ctl_die("%s\n", SDL_GetError());
 
     return video;
 }
@@ -113,8 +128,7 @@ int video_thread(void *arg)
 {
     struct video_data *video_data = (struct video_data *)arg;
     struct av *av = &video_data->av;
-
-    AVFrame *decoded = av_frame_alloc();
+    AVFrame *restrict decoded = video_data->img.decoded;
     int ret;
 
     while(1) {
@@ -122,29 +136,20 @@ int video_thread(void *arg)
             fprintf(stderr, "av_read_frame() failed\n");
         if((ret = avcodec_send_packet(av->decoder, av->pkt)) < 0)
             fprintf(stderr, "avcodec_send_packet() failed\n");
+        video_lock(video_data);
         if((ret = avcodec_receive_frame(av->decoder, decoded)) < 0) {
-            if(ret == AVERROR(EAGAIN))
+            video_unlock(video_data);
+            if(ret == AVERROR(EAGAIN)) {
                 continue;
+            }
             fprintf(stderr, "avcodec_receive_frame() failed\n");
         }
+        video_unlock(video_data);
         printf("width: %d height: %d\n", decoded->width, decoded->height);
-        ret = av_image_alloc(video_data->img.bgr,
-                             video_data->img.linesizes,
-                             video_data->width,
-                             video_data->height,
-                             AV_PIX_FMT_BGR24,
-                             1);
+        printf("pitch %d\n", video_data->img.pitch);
+
         if(ret < 0)
             fprintf(stderr, "av_image_alloc() failed\n");
-        sws_scale(av->sws,
-                  (const uint8_t *const *)decoded->data,
-                  decoded->linesize,
-                  0,
-                  decoded->height,
-                  video_data->img.bgr,
-                  video_data->img.linesizes);
         printf("Frame decoded!\n");
-        // just free it for now
-        av_freep(video_data->img.bgr);
     }
 }
