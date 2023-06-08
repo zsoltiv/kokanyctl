@@ -60,8 +60,9 @@ int main(void)
     TCPsocket remote = net_connect_to_remote(&ctl_addr);
     SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 
-    //struct video_data *video_data = video_init();
-    //SDL_CreateThread(video_thread, "video", video_data);
+
+    struct video_data *video_data = video_init(rend);
+    SDL_CreateThread(video_thread, "video", video_data);
 
     int key_count;
     const uint8_t *keys = SDL_GetKeyboardState(&key_count);
@@ -76,7 +77,10 @@ int main(void)
         SDL_PumpEvents();
 
         SDL_RenderClear(rend);
-
+        video_lock(video_data);
+        video_update_screen(video_data);
+        SDL_RenderCopy(rend, video_get_screen(video_data), NULL, NULL);
+        video_unlock(video_data);
         SDL_RenderCopy(rend, text, NULL, &textrect);
         
         for(int i = 0; i < sizeof(handled_scancodes); i++) {
