@@ -1,20 +1,20 @@
 [
   {
     "arguments": [
-      "/usr/bin/c++",
+      "/usr/bin/cc",
       "-c",
-      "-I/usr/include/opencv4",
+      "-std=c11",
       "-I/usr/include/SDL2",
       "-D_REENTRANT",
       "-g",
       "-D_XOPEN_SOURCE=700",
       "-O0",
       "-o",
-      "build/imgproc.cpp.o",
-      "src/imgproc.cpp"
+      "build/video.c.o",
+      "src/video.c"
     ],
     "directory": "/home/zsolti/projects/kokanyctl",
-    "file": "/home/zsolti/projects/kokanyctl/src/imgproc.cpp",
-    "output": "/home/zsolti/projects/kokanyctl/build/imgproc.cpp.o"
+    "file": "/home/zsolti/projects/kokanyctl/src/video.c",
+    "output": "/home/zsolti/projects/kokanyctl/build/video.c.o"
   }
 ]
