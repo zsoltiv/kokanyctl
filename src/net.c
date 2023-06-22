@@ -14,7 +14,6 @@
 #include "net.h"
 
 #define NET_FFMPEG_PROTO "tcp://"
-#define NET_FFMPEG_OPTS "?listen=1"
 
 TCPsocket net_connect_to_remote(IPaddress *remote)
 {
@@ -62,17 +61,15 @@ const char *net_ffmpeg_format_url(IPaddress *ip)
 
     size_t port_sz = strlen(port);
     size_t ip_sz = strlen(ip_string);
-    size_t ffmpeg_opts_sz = strlen(NET_FFMPEG_OPTS);
     size_t ffmpeg_proto_sz = strlen(NET_FFMPEG_PROTO);
-    size_t total = ffmpeg_proto_sz + ip_sz + port_sz + ffmpeg_opts_sz + 1;
+    size_t total = ffmpeg_proto_sz + ip_sz + port_sz + 1;
     char *buf = calloc(total + 1, 1);
     snprintf(buf,
              total,
-             "%s%s%s%s",
+             "%s%s%s",
              NET_FFMPEG_PROTO,
              ip_string,
-             port,
-             NET_FFMPEG_OPTS);
+             port);
 
     return buf;
 }
