@@ -1,11 +1,9 @@
-#include <libavutil/frame.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
-#include <libswscale/swscale.h>
 #include <libavutil/imgutils.h>
 #include "SDL.h"
 
@@ -17,10 +15,6 @@
  * This thread receives video data over a socket and decodes it
  * into `AVFrame`s for the image processing thread to use
 */
-
-#define REMOTE_OPTS "?listen=1"
-// FIXME use kokanybot's static IP
-#define REMOTE "tcp://127.0.0.1:1337" REMOTE_OPTS
 
 struct image {
     AVFrame *decoded;
@@ -72,20 +66,28 @@ void video_update_screen(struct video_data *video_data)
                          video_data->img.decoded->linesize[2]);
 }
 
-struct video_data *video_init(SDL_Renderer *rend)
+struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
 {
     struct video_data *video = malloc(sizeof(struct video_data));
     struct av *av = &video->av; // alias for simplicity
+    int ret;
     avformat_network_init();
     av->fmt = avformat_alloc_context();
-    if(avformat_open_input(&av->fmt, REMOTE, NULL, NULL) < 0)
-        fprintf(stderr, "avformat_open_input() failed\n");
+    AVInputFormat *mpegts = av_find_input_format("mpegts");
+    if(!mpegts)
+        fprintf(stderr, "mpegts not supported\n");
+    if((ret = avformat_open_input(&av->fmt, uri, mpegts, NULL)) < 0) {
+        fprintf(stderr, "avformat_open_input() failed: %s\n", av_err2str(ret));
+    }
     fprintf(stderr, "Format: %s\n", av->fmt->iformat->long_name);
     if(avformat_find_stream_info(av->fmt, NULL) < 0)
         fprintf(stderr, "avformat_find_stream_info() failed\n");
 
-    if(av->fmt->nb_streams != 1)
+    if(av->fmt->nb_streams != 1) {
+        for(int i = 0; i < av->fmt->nb_streams; i++)
+            printf("Stream #%d: %s\n", i, avcodec_get_name(av->fmt->streams[i]->codecpar->codec_id));
         ctl_die("Too many streams!\n");
+    }
     AVStream *stream = av->fmt->streams[0];
     if(stream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
         ctl_die("Not a video stream!\n");
@@ -96,13 +98,12 @@ struct video_data *video_init(SDL_Renderer *rend)
     video->width = av->decoder->width;
     video->height = av->decoder->height;
     avcodec_open2(av->decoder, codec, NULL);
-    fprintf(stderr, "swscale initialized!\n");
 
     av->pkt = av_packet_alloc();
     video->img.decoded = av_frame_alloc();
     video->lock = SDL_CreateMutex();
 
-    assert(av->decoder->pix_fmt == AV_PIX_FMT_YUV420P);
+    printf("Pixel format: %s\n", av_get_pix_fmt_name(av->decoder->pix_fmt));
 
     video->screen = SDL_CreateTexture(rend,
                                       SDL_PIXELFORMAT_IYUV,
@@ -130,6 +131,15 @@ int video_thread(void *arg)
     struct av *av = &video_data->av;
     AVFrame *restrict decoded = video_data->img.decoded;
     int ret;
+
+    // discard all frames received until now
+    while(ret != AVERROR(EAGAIN)) {
+        if((ret = av_read_frame(av->fmt, av->pkt)) < 0)
+            continue;
+        if((ret = avcodec_send_packet(av->decoder, av->pkt)) < 0)
+            continue;
+        ret = avcodec_receive_frame(av->decoder, decoded);
+    }
 
     while(1) {
         if((ret = av_read_frame(av->fmt, av->pkt)) < 0)

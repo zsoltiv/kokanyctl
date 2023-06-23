@@ -17,8 +17,7 @@
 
 TCPsocket net_connect_to_remote(IPaddress *remote)
 {
-    printf("%u:%u\n", remote->host, remote->port);
-    fflush(stdout);
+    printf("%x:%u\n", remote->host, remote->port);
     TCPsocket sock =  SDLNet_TCP_Open(remote);
     if(!sock)
         ctl_die("SDLNet_TCP_Open(): %s\n", SDLNet_GetError());
@@ -35,7 +34,6 @@ IPaddress net_resolve_host(const char *remote, uint16_t port)
 
 void net_send_keycode(TCPsocket remote, uint8_t keycode)
 {
-    printf("sending %u\n", keycode);
     if(SDLNet_TCP_Send(remote,
                        &keycode,
                        1) < 1)
@@ -57,7 +55,7 @@ const char *net_ffmpeg_format_url(IPaddress *ip)
         return NULL;
 
     char port[13] = {0};
-    snprintf(port, sizeof(port), ":%u", ntohs(ip->port));
+    snprintf(port, sizeof(port), ":%u", ip->port);
 
     size_t port_sz = strlen(port);
     size_t ip_sz = strlen(ip_string);
@@ -70,6 +68,7 @@ const char *net_ffmpeg_format_url(IPaddress *ip)
              NET_FFMPEG_PROTO,
              ip_string,
              port);
+    printf("URL %s\n", buf);
 
     return buf;
 }
