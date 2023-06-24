@@ -12,14 +12,9 @@
 #include "video.h"
 
 /*
- * This thread receives video data over a socket and decodes it
- * into `AVFrame`s for the image processing thread to use
+ * This thread receives video and audio data
+ * over a socket and decodes them for use with SDL2
 */
-
-struct image {
-    AVFrame *decoded;
-    int pitch;
-};
 
 struct av {
     /*
@@ -32,11 +27,11 @@ struct av {
 
 struct video_data {
     struct av av;
+    AVFrame *decoded;
     // shared data
     int width, height;
     SDL_mutex *lock;
     SDL_Texture *screen;
-    struct image img;
 };
 
 int video_get_width(struct video_data *video_data)
@@ -58,12 +53,12 @@ SDL_Texture *video_get_screen(struct video_data *video_data)
 void video_update_screen(struct video_data *video_data)
 {
     SDL_UpdateYUVTexture(video_data->screen, NULL,
-                         video_data->img.decoded->data[0],
-                         video_data->img.decoded->linesize[0],
-                         video_data->img.decoded->data[1],
-                         video_data->img.decoded->linesize[1],
-                         video_data->img.decoded->data[2],
-                         video_data->img.decoded->linesize[2]);
+                         video_data->decoded->data[0],
+                         video_data->decoded->linesize[0],
+                         video_data->decoded->data[1],
+                         video_data->decoded->linesize[1],
+                         video_data->decoded->data[2],
+                         video_data->decoded->linesize[2]);
 }
 
 struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
@@ -100,7 +95,7 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
     avcodec_open2(av->decoder, codec, NULL);
 
     av->pkt = av_packet_alloc();
-    video->img.decoded = av_frame_alloc();
+    video->decoded = av_frame_alloc();
     video->lock = SDL_CreateMutex();
 
     printf("Pixel format: %s\n", av_get_pix_fmt_name(av->decoder->pix_fmt));
@@ -129,7 +124,7 @@ int video_thread(void *arg)
 {
     struct video_data *video_data = (struct video_data *)arg;
     struct av *av = &video_data->av;
-    AVFrame *restrict decoded = video_data->img.decoded;
+    AVFrame *restrict decoded = video_data->decoded;
     int ret;
 
     // discard all frames received until now
@@ -156,7 +151,6 @@ int video_thread(void *arg)
         }
         video_unlock(video_data);
         printf("width: %d height: %d\n", decoded->width, decoded->height);
-        printf("pitch %d\n", video_data->img.pitch);
 
         if(ret < 0)
             fprintf(stderr, "av_image_alloc() failed\n");
