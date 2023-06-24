@@ -22,6 +22,7 @@ struct av {
     */
     AVFormatContext *fmt;
     AVCodecContext *decoder;
+    int audio_idx, video_idx;
     AVPacket *pkt;
 };
 
@@ -78,14 +79,14 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
     if(avformat_find_stream_info(av->fmt, NULL) < 0)
         fprintf(stderr, "avformat_find_stream_info() failed\n");
 
-    if(av->fmt->nb_streams != 1) {
-        for(int i = 0; i < av->fmt->nb_streams; i++)
-            printf("Stream #%d: %s\n", i, avcodec_get_name(av->fmt->streams[i]->codecpar->codec_id));
-        ctl_die("Too many streams!\n");
+    for(int i = 0; i < av->fmt->nb_streams; i++) {
+        printf("Stream #%d: %s\n", i, avcodec_get_name(av->fmt->streams[i]->codecpar->codec_id));
+        if(av->fmt->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+            av->video_idx = i;
+        else
+            av->audio_idx = i;
     }
-    AVStream *stream = av->fmt->streams[0];
-    if(stream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
-        ctl_die("Not a video stream!\n");
+    AVStream *stream = av->fmt->streams[av->video_idx];
     const AVCodec *codec = avcodec_find_decoder(stream->codecpar->codec_id);
     fprintf(stderr, "Using decoder %s\n", codec->long_name);
     av->decoder = avcodec_alloc_context3(codec);
@@ -139,6 +140,8 @@ int video_thread(void *arg)
     while(1) {
         if((ret = av_read_frame(av->fmt, av->pkt)) < 0)
             fprintf(stderr, "av_read_frame() failed\n");
+        if(av->pkt->stream_index == av->audio_idx)
+            continue;
         if((ret = avcodec_send_packet(av->decoder, av->pkt)) < 0)
             fprintf(stderr, "avcodec_send_packet() failed\n");
         video_lock(video_data);
