@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import cv2 as cv
+import numpy as np
 from sys import argv, exit
 
 if len(argv) < 2:
@@ -8,6 +9,7 @@ if len(argv) < 2:
 
 
 def draw_motion(still, current):
+    MOTION_COLOR = [255, 20, 147]  # deeppink
     if still is None:
         print('still is none')
         return
@@ -17,9 +19,9 @@ def draw_motion(still, current):
     second = cv.GaussianBlur(second, (5, 5), 0)
     motion = cv.absdiff(first, second)
     motion = cv.threshold(motion, 20, 255, cv.THRESH_BINARY)[1]
-    cv.imshow('LOL!', motion)
-    cv.waitKey(0)
-    cv.destroyAllWindows()
+    rows, cols = np.where(motion == 255)
+    for i in range(len(rows)):
+        current[rows[i], cols[i]] = MOTION_COLOR
 
 
 url = 'tcp://' + argv[-1] + ':1338'
@@ -31,8 +33,13 @@ if not cap.isOpened():
 still = None
 while True:
     ret, frame = cap.read()
+    orig = frame.copy()
     if ret is False:
         continue
     draw_motion(still, frame)
-    still = frame
+    if still is not None:
+        cv.imshow('motion', frame)
+        cv.waitKey(0)
+        cv.destroyAllWindows()
+    still = orig
 cap.release()
