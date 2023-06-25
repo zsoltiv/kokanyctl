@@ -29,6 +29,10 @@ url = 'tcp://' + argv[-1] + ':1338'
 cap = cv.VideoCapture(url)
 if not cap.isOpened():
     exit(f'Failed to open stream at {url}')
+if not cap.set(cv.CAP_PROP_CONVERT_RGB, 1.0):
+    exit('Failed to set CAP_PROP_CONVERT_RGB')
+if cap.get(cv.CAP_PROP_CONVERT_RGB) == 0:
+    exit('CAP_PROP_CONVERT_RGB not supported by FFmpeg backend')
 
 still = None
 while True:
