@@ -39,7 +39,7 @@ while True:
     draw_motion(still, frame)
     if still is not None:
         cv.imshow('motion', frame)
-        cv.waitKey(0)
-        cv.destroyAllWindows()
+        cv.waitKey(1)
     still = orig
+cv.destroyAllWindows()
 cap.release()
