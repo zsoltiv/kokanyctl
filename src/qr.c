@@ -15,8 +15,6 @@ struct qr {
     zbar_processor_t *processor;
     SDL_mutex *lock;
     SDL_cond *cond;
-    int linesizes[4];
-    uint8_t *rgb[4];
     uint8_t *buf;
     int bufsize;
 };
@@ -31,7 +29,6 @@ struct qr *qr_init(const unsigned int width,
     qr->processor = zbar_processor_create(0);
     qr->img = zbar_image_create();
     qr->bufsize = 0;
-    *qr->rgb = NULL;
     zbar_image_set_format(qr->img, zbar_fourcc('Y', 'U', '1', '2'));
     zbar_image_set_size(qr->img, width, height);
     qr->buf = NULL;
