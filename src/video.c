@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <assert.h>
 
 #include <libavformat/avformat.h>
@@ -7,7 +8,7 @@
 #include <libavutil/imgutils.h>
 #include "SDL.h"
 
-#include "SDL_render.h"
+#include "qr.h"
 #include "utils.h"
 #include "video.h"
 
@@ -18,12 +19,13 @@
 
 struct av {
     /*
-     * libav* stuff
+     * internal stuff
     */
     AVFormatContext *fmt;
     AVCodecContext *decoder;
     int audio_idx, video_idx;
     AVPacket *pkt;
+    struct qr *qr;
 };
 
 struct video_data {
@@ -33,6 +35,7 @@ struct video_data {
     int width, height;
     SDL_mutex *lock;
     SDL_Texture *screen;
+    int framenum;
 };
 
 int video_get_width(struct video_data *video_data)
@@ -98,6 +101,10 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
     av->pkt = av_packet_alloc();
     video->decoded = av_frame_alloc();
     video->lock = SDL_CreateMutex();
+    video->framenum = 0;
+    av->qr = qr_init(video->width, video->height, av->decoder->pix_fmt);
+    SDL_CreateThread(qr_thread, "qr", av->qr);
+    printf("QR thread initialised\n");
 
     printf("Pixel format: %s\n", av_get_pix_fmt_name(av->decoder->pix_fmt));
 
@@ -152,11 +159,12 @@ int video_thread(void *arg)
             }
             fprintf(stderr, "avcodec_receive_frame() failed\n");
         }
+        // send every 5th frame to the QR code decoder
+        if(video_data->framenum % 5 == 0) {
+            printf("Sending frame to QR thread\n");
+            qr_send_frame(av->qr, decoded);
+        }
         video_unlock(video_data);
-        printf("width: %d height: %d\n", decoded->width, decoded->height);
-
-        if(ret < 0)
-            fprintf(stderr, "av_image_alloc() failed\n");
-        printf("Frame decoded!\n");
+        video_data->framenum++;
     }
 }

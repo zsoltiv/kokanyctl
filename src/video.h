@@ -17,6 +17,7 @@ void video_lock(struct video_data *video_data);
 void video_unlock(struct video_data *video_data);
 SDL_Texture *video_get_screen(struct video_data *video_data);
 void video_update_screen(struct video_data *video_data);
+void video_scan_qr(struct video_data *video);
 int video_get_width(struct video_data *video_data);
 int video_get_height(struct video_data *video_data);
 int video_thread(void *arg);
