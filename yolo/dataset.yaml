@@ -1,0 +1,20 @@
+path: .
+train: placard
+val: placard
+
+names:
+  0: blasting-agents
+  1: corrosive
+  2: dangerous-when-wet
+  3: explosives
+  4: flammable-gas
+  5: flammable-solid
+  6: fuel-oil
+  7: inhalation-hazad
+  8: non-flammable-gas
+  9: organic-peroxide
+  10: oxidizer
+  11: oxygen
+  12: poison
+  13: radioactive
+  14: spontaneously-combustible
