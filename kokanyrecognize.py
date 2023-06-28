@@ -24,7 +24,23 @@ def draw_motion(still, current):
         current[rows[i], cols[i]] = MOTION_COLOR
 
 
-IMGSZ = 640
+IMGSZ = 1280
+CLASSES = ['BLASTING AGENTS',
+           'COMBUSTIBLE',
+           'CORROSIVE',
+           'DANGEROUS',
+           'EXPLOSIVES',
+           'FLAMMABLE GAS',
+           'FLAMMABLE SOLID',
+           'FUEL OIL',
+           'INHALATION HAZARD',
+           'NON-FLAMMABLE GAS',
+           'ORGANIC PEROXIDE',
+           'OXIiDIZER',
+           'OXYGEN',
+           'POISON',
+           'RADIOACTIVE',
+           'SUD LHOR']
 url = 'tcp://' + argv[-1] + ':1338'
 model = cv.dnn.readNet('yolo/model.onnx')
 model.setPreferableBackend(cv.dnn.DNN_BACKEND_OPENCV)
@@ -39,11 +55,24 @@ def draw_bounding_box(frame, detection):
     w = int(w * WIDTH_SCALE)
     y = int(abs(y - h / 2) * HEIGHT_SCALE)
     h = int(h * HEIGHT_SCALE)
-    cv.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+    classes = detection[5:]
+    highest = 0
+    for i in range(len(classes)):
+        if classes[i] > classes[highest]:
+            highest = i
+    print(CLASSES[highest])
+    cv.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    cv.putText(frame,
+               CLASSES[highest],
+               (x, y - 10),
+               cv.FONT_HERSHEY_SIMPLEX,
+               0.9,
+               (0, 255, 0),
+               2)
 
 
 def feed_model(frame):
-    CONFIDENCE_THRESHOLD = 0.005
+    CONFIDENCE_THRESHOLD = 0.5
     foo = frame.copy()
     blob = cv.dnn.blobFromImage(foo, 1 / 255.0, (IMGSZ, IMGSZ), swapRB=False)
     model.setInput(blob)
@@ -52,7 +81,6 @@ def feed_model(frame):
     for i in range(predictions.shape[0]):
         if predictions[i][4] > CONFIDENCE_THRESHOLD:
             confident.append(predictions[i])
-    print(confident)
     for prediction in confident:
         draw_bounding_box(frame, prediction)
 
