@@ -70,16 +70,18 @@ int main(int argc, char *argv[])
                                        SDL_WINDOW_RESIZABLE);
     if(!win)
         ctl_die("SDL window creation error: %s\n", SDL_GetError());
-    SDL_Renderer *rend = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
+    SDL_Renderer *rend = SDL_CreateRenderer(win,
+                                            -1,
+                                            SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if(!rend)
         ctl_die("SDL renderer creation error: %s\n", SDL_GetError());
 
-    //IPaddress ctl_addr = net_resolve_host(argv[1], PORT_CTL);
+    IPaddress ctl_addr = net_resolve_host(argv[1], PORT_CTL);
     IPaddress video_addr = net_resolve_host(argv[1], PORT_VIDEO);
     const char *stream_uri = net_ffmpeg_format_url(&video_addr);
     struct video_data *video_data = video_init(rend, stream_uri);
     SDL_CreateThread(video_thread, "video", video_data);
-    //TCPsocket remote = net_connect_to_remote(&ctl_addr);
+    TCPsocket remote = net_connect_to_remote(&ctl_addr);
     SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 
     int key_count;
@@ -102,10 +104,10 @@ int main(int argc, char *argv[])
         SDL_RenderCopy(rend, text, NULL, &textrect);
         
         for(int i = 0; i < sizeof(handled_scancodes); i++) {
-            //if(keys[handled_scancodes[i]])
-            //    net_send_keycode(remote, net_encode_scancode(handled_scancodes[i], true));
-            //else
-            //    net_send_keycode(remote, net_encode_scancode(handled_scancodes[i], false));
+            if(keys[handled_scancodes[i]])
+                net_send_keycode(remote, net_encode_scancode(handled_scancodes[i], true));
+            else
+                net_send_keycode(remote, net_encode_scancode(handled_scancodes[i], false));
         }
         if(keys[SDL_SCANCODE_Q])
             break;
