@@ -1,3 +1,22 @@
+/*
+ * copyright (c) 2023 Zsolt Vadasz
+ *
+ * This file is part of kokanyctl.
+ *
+ * kokanyctl is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * kokanyctl is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with kokanyctl. If not, see <https://www.gnu.org/licenses/>. 
+*/
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -55,12 +74,12 @@ int main(int argc, char *argv[])
     if(!rend)
         ctl_die("SDL renderer creation error: %s\n", SDL_GetError());
 
-    IPaddress ctl_addr = net_resolve_host(argv[1], PORT_CTL);
+    //IPaddress ctl_addr = net_resolve_host(argv[1], PORT_CTL);
     IPaddress video_addr = net_resolve_host(argv[1], PORT_VIDEO);
     const char *stream_uri = net_ffmpeg_format_url(&video_addr);
     struct video_data *video_data = video_init(rend, stream_uri);
     SDL_CreateThread(video_thread, "video", video_data);
-    TCPsocket remote = net_connect_to_remote(&ctl_addr);
+    //TCPsocket remote = net_connect_to_remote(&ctl_addr);
     SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 
     int key_count;
@@ -83,10 +102,10 @@ int main(int argc, char *argv[])
         SDL_RenderCopy(rend, text, NULL, &textrect);
         
         for(int i = 0; i < sizeof(handled_scancodes); i++) {
-            if(keys[handled_scancodes[i]])
-                net_send_keycode(remote, net_encode_scancode(handled_scancodes[i], true));
-            else
-                net_send_keycode(remote, net_encode_scancode(handled_scancodes[i], false));
+            //if(keys[handled_scancodes[i]])
+            //    net_send_keycode(remote, net_encode_scancode(handled_scancodes[i], true));
+            //else
+            //    net_send_keycode(remote, net_encode_scancode(handled_scancodes[i], false));
         }
         if(keys[SDL_SCANCODE_Q])
             break;
