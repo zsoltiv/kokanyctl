@@ -2,3 +2,6 @@ kokanyctl
 build
 build/*
 .cache
+*.png
+*.jpeg
+*.jpg
