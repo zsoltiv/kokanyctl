@@ -32,7 +32,7 @@
 #define PORT_CTL 1337
 #define PORT_VIDEO 1338
 
-static const uint8_t handled_scancodes[] = {
+const uint8_t handled_scancodes[] = {
     SDL_SCANCODE_W,
     SDL_SCANCODE_A,
     SDL_SCANCODE_S,
@@ -46,6 +46,7 @@ static const uint8_t handled_scancodes[] = {
     SDL_SCANCODE_5,
     SDL_SCANCODE_6,
 };
+bool prev_keys[UINT8_MAX] = {0};
 
 int main(int argc, char *argv[])
 {
@@ -102,12 +103,12 @@ int main(int argc, char *argv[])
         SDL_RenderCopy(rend, video_get_screen(video_data), NULL, NULL);
         video_unlock(video_data);
         SDL_RenderCopy(rend, text, NULL, &textrect);
-        
+
         for(int i = 0; i < sizeof(handled_scancodes); i++) {
-            if(keys[handled_scancodes[i]])
-                net_send_keycode(remote, net_encode_scancode(handled_scancodes[i], true));
-            else
-                net_send_keycode(remote, net_encode_scancode(handled_scancodes[i], false));
+            if(keys[handled_scancodes[i]] != prev_keys[handled_scancodes[i]]) {
+                net_send_keycode(remote, net_encode_scancode(handled_scancodes[i], keys[handled_scancodes[i]]));
+                prev_keys[handled_scancodes[i]] = keys[handled_scancodes[i]];
+            }
         }
         if(keys[SDL_SCANCODE_Q])
             break;
