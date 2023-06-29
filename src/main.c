@@ -20,17 +20,18 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <sys/socket.h>
 
 #include "SDL.h"
 #include "SDL_ttf.h"
-#include "SDL_net.h"
 
 #include "net.h"
 #include "video.h"
 #include "utils.h"
 
-#define PORT_CTL 1337
-#define PORT_VIDEO 1338
+#define PORT_CTL "1337"
+#define PORT_VIDEO "1338"
+#define PORT_SENSOR "1339"
 
 const uint8_t handled_scancodes[] = {
     SDL_SCANCODE_W,
@@ -52,10 +53,8 @@ int main(int argc, char *argv[])
 {
     if(argc != 2)
         return 1;
-    if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0)
+    if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER) < 0)
         ctl_die("SDL init error: %s\n", SDL_GetError());
-    if(SDLNet_Init() < 0)
-        ctl_die("SDLNet init error: %s\n", SDLNet_GetError());
     if(TTF_Init() < 0)
         ctl_die("TTF init error: %s\n", TTF_GetError());
 
@@ -77,22 +76,27 @@ int main(int argc, char *argv[])
     if(!rend)
         ctl_die("SDL renderer creation error: %s\n", SDL_GetError());
 
-    IPaddress ctl_addr = net_resolve_host(argv[1], PORT_CTL);
-    IPaddress video_addr = net_resolve_host(argv[1], PORT_VIDEO);
-    const char *stream_uri = net_ffmpeg_format_url(&video_addr);
+    struct sockaddr ctl_addr = net_resolve_host(argv[1], PORT_CTL);
+    struct sockaddr video_addr = net_resolve_host(argv[1], PORT_VIDEO);
+    struct sockaddr sensor_addr = net_resolve_host(argv[1], PORT_SENSOR);
+    const char *stream_uri = net_ffmpeg_format_url(argv[1], PORT_VIDEO);
     struct video_data *video_data = video_init(rend, stream_uri);
     SDL_CreateThread(video_thread, "video", video_data);
-    TCPsocket remote = net_connect_to_remote(&ctl_addr);
+    int remote = net_connect_to_remote(&ctl_addr);
+    int sensor = net_connect_to_remote(&sensor_addr);
     SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 
     int key_count;
     const uint8_t *keys = SDL_GetKeyboardState(&key_count);
 
-    SDL_Surface *textsurf = TTF_RenderUTF8_Solid(font, "kokanyctl initialized", (SDL_Color) {.r = 255, .g = 255, .b = 255, .a = 255});
-    SDL_Texture *text = SDL_CreateTextureFromSurface(rend, textsurf);
-    SDL_FreeSurface(textsurf);
+    SDL_Surface *present_surface = TTF_RenderUTF8_Solid(font, "Gas present", (SDL_Color) {255, 0, 0, 255});
+    SDL_Surface *not_present_surface = TTF_RenderUTF8_Solid(font, "No gas present", (SDL_Color) {0, 255, 0, 255});
+    SDL_Texture *present = SDL_CreateTextureFromSurface(rend, present_surface);
+    SDL_Texture *not_present = SDL_CreateTextureFromSurface(rend, not_present_surface);
+    SDL_FreeSurface(present_surface);
+    SDL_FreeSurface(not_present_surface);
 
-    const SDL_Rect textrect = {0, 0, 200, 32};
+    const SDL_Rect textrect = {0, 0, 300, 64};
 
     while(true) {
         SDL_PumpEvents();
@@ -102,7 +106,11 @@ int main(int argc, char *argv[])
         video_update_screen(video_data);
         SDL_RenderCopy(rend, video_get_screen(video_data), NULL, NULL);
         video_unlock(video_data);
-        SDL_RenderCopy(rend, text, NULL, &textrect);
+        bool co2_present;
+        if(recv(sensor, &co2_present, sizeof(bool), 0) < 0) {
+            perror("recv()");
+        }
+        SDL_RenderCopy(rend, co2_present ? present : not_present, NULL, &textrect);
 
         for(int i = 0; i < sizeof(handled_scancodes); i++) {
             if(keys[handled_scancodes[i]] != prev_keys[handled_scancodes[i]]) {
@@ -117,5 +125,4 @@ int main(int argc, char *argv[])
     }
 
     SDL_Quit();
-    SDLNet_Quit();
 }

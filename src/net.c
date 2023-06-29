@@ -17,47 +17,59 @@
  * along with kokanyctl. If not, see <https://www.gnu.org/licenses/>. 
 */
 
-#include <ifaddrs.h>
 #include <stdio.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <netinet/in.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <arpa/inet.h>
 #include <string.h>
 
-#include "SDL_net.h"
+#include "SDL.h"
 
 #include "utils.h"
-
 #include "net.h"
 
 #define NET_FFMPEG_PROTO "tcp://"
 
-TCPsocket net_connect_to_remote(IPaddress *remote)
+int net_connect_to_remote(struct sockaddr *remote)
 {
-    printf("%x:%u\n", remote->host, remote->port);
-    TCPsocket sock =  SDLNet_TCP_Open(remote);
-    if(!sock)
-        ctl_die("SDLNet_TCP_Open(): %s\n", SDLNet_GetError());
-
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if(connect(sock, remote, sizeof(*remote)) < 0)
+        perror("connect()");
     return sock;
 }
 
-IPaddress net_resolve_host(const char *remote, uint16_t port)
+struct sockaddr net_resolve_host(const char *remote, const char *port)
 {
-    IPaddress ip;
-    SDLNet_ResolveHost(&ip, remote, htons(port));
-    return ip;
+    printf("%s:%s\n", remote, port);
+    const struct addrinfo hints = {
+        .ai_family = AF_INET,
+        .ai_socktype = SOCK_STREAM
+    };
+    struct addrinfo *res;
+    int ret;
+    if((ret = getaddrinfo(remote, port, &hints, &res)))
+        ctl_die("getaddrinfo(): %s", gai_strerror(ret));
+    struct sockaddr out;
+    memcpy(&out, res->ai_addr, sizeof(struct sockaddr));
+    freeaddrinfo(res);
+
+    char buf[INET_ADDRSTRLEN] = {0};
+    inet_ntop(AF_INET, &((struct sockaddr_in *)&out)->sin_addr, buf, sizeof(buf));
+    printf("Resolved %s to %s\n", remote, buf);
+    printf("%s port is %u\n", buf, ntohs(((struct sockaddr_in *)&out)->sin_port));
+
+    return out;
 }
 
-void net_send_keycode(TCPsocket remote, uint8_t keycode)
+void net_send_keycode(int remote, uint8_t keycode)
 {
-    if(SDLNet_TCP_Send(remote,
-                       &keycode,
-                       1) < 1)
-        ctl_die("SDLNet_TCP_Send(): %s", SDLNet_GetError());
-
+    if(send(remote, &keycode, 1, 0) < 0)
+        perror("send()");
 }
 
 uint8_t net_encode_scancode(uint8_t scancode, bool pressed)
@@ -67,23 +79,16 @@ uint8_t net_encode_scancode(uint8_t scancode, bool pressed)
     return (uint8_t)SDL_GetKeyFromScancode(scancode) | pressed_u8;
 }
 
-const char *net_ffmpeg_format_url(IPaddress *ip)
+const char *net_ffmpeg_format_url(const char *ip_string, const char *port)
 {
-    const char *ip_string = SDLNet_ResolveIP(ip);
-    if(!ip_string)
-        return NULL;
-
-    char port[13] = {0};
-    snprintf(port, sizeof(port), ":%u", ip->port);
-
     size_t port_sz = strlen(port);
     size_t ip_sz = strlen(ip_string);
     size_t ffmpeg_proto_sz = strlen(NET_FFMPEG_PROTO);
-    size_t total = ffmpeg_proto_sz + ip_sz + port_sz + 1;
+    size_t total = ffmpeg_proto_sz + ip_sz + port_sz + 2;
     char *buf = calloc(total + 1, 1);
     snprintf(buf,
              total,
-             "%s%s%s",
+             "%s%s:%s",
              NET_FFMPEG_PROTO,
              ip_string,
              port);

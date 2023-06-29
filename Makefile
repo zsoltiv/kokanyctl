@@ -1,8 +1,8 @@
 CC = cc
 STDC = -std=c11
-INC = `pkg-config --cflags zbar sdl2 SDL2_net SDL2_ttf libavformat libavcodec libavutil`
+INC = `pkg-config --cflags zbar sdl2 SDL2_ttf libavformat libavcodec libavutil`
 CFLAGS = $(INC) -g -D_XOPEN_SOURCE=700 -O0
-LDFLAGS = `pkg-config --libs zbar sdl2 SDL2_net SDL2_ttf libavformat libavcodec libavutil`
+LDFLAGS = `pkg-config --libs zbar sdl2 SDL2_ttf libavformat libavcodec libavutil`
 
 BIN = kokanyctl
 

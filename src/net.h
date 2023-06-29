@@ -27,13 +27,11 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "SDL_net.h"
-
-IPaddress net_resolve_host(const char *remote, uint16_t port);
-TCPsocket net_connect_to_remote(IPaddress *remote);
+struct sockaddr net_resolve_host(const char *remote, const char *port);
+int net_connect_to_remote(struct sockaddr *remote);
 uint8_t net_encode_scancode(uint8_t scancode, bool pressed);
-void net_send_keycode(TCPsocket remote, uint8_t keycode);
-const char *net_ffmpeg_format_url(IPaddress *ip);
+void net_send_keycode(int remote, uint8_t keycode);
+const char *net_ffmpeg_format_url(const char *ip_string, const char *port);
 
 #ifdef __cplusplus
 }
