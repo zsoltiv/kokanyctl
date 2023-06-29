@@ -135,6 +135,8 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
     if(!video->screen)
         ctl_die("%s\n", SDL_GetError());
 
+    av_log_set_level(AV_LOG_PANIC);
+
     return video;
 }
 
