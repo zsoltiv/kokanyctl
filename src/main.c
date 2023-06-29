@@ -17,9 +17,11 @@
  * along with kokanyctl. If not, see <https://www.gnu.org/licenses/>. 
 */
 
+#include <asm-generic/errno-base.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <errno.h>
 #include <sys/socket.h>
 
 #include "SDL.h"
@@ -76,14 +78,11 @@ int main(int argc, char *argv[])
     if(!rend)
         ctl_die("SDL renderer creation error: %s\n", SDL_GetError());
 
-    struct sockaddr ctl_addr = net_resolve_host(argv[1], PORT_CTL);
-    struct sockaddr video_addr = net_resolve_host(argv[1], PORT_VIDEO);
-    struct sockaddr sensor_addr = net_resolve_host(argv[1], PORT_SENSOR);
     const char *stream_uri = net_ffmpeg_format_url(argv[1], PORT_VIDEO);
     struct video_data *video_data = video_init(rend, stream_uri);
     SDL_CreateThread(video_thread, "video", video_data);
-    int remote = net_connect_to_remote(&ctl_addr);
-    int sensor = net_connect_to_remote(&sensor_addr);
+    int remote = net_connect_to_remote(argv[1], PORT_CTL);
+    int sensor = net_connect_to_remote(argv[1], PORT_SENSOR);
     SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 
     int key_count;
@@ -108,7 +107,10 @@ int main(int argc, char *argv[])
         video_unlock(video_data);
         bool co2_present;
         if(recv(sensor, &co2_present, sizeof(bool), 0) < 0) {
-            perror("recv()");
+            if(errno != EAGAIN && errno != EWOULDBLOCK) {
+                perror("recv()");
+                exit(1);
+            }
         }
         SDL_RenderCopy(rend, co2_present ? present : not_present, NULL, &textrect);
 
