@@ -17,7 +17,6 @@
  * along with kokanyctl. If not, see <https://www.gnu.org/licenses/>. 
 */
 
-#include <asm-generic/errno-base.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -48,6 +47,8 @@ const uint8_t handled_scancodes[] = {
     SDL_SCANCODE_4,
     SDL_SCANCODE_5,
     SDL_SCANCODE_6,
+    SDL_SCANCODE_7,
+    SDL_SCANCODE_8,
 };
 bool prev_keys[UINT8_MAX] = {0};
 
@@ -120,7 +121,7 @@ int main(int argc, char *argv[])
                 prev_keys[handled_scancodes[i]] = keys[handled_scancodes[i]];
             }
         }
-        if(keys[SDL_SCANCODE_Q])
+        if(keys[SDL_SCANCODE_ESCAPE])
             break;
 
         SDL_RenderPresent(rend);
