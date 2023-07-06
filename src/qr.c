@@ -33,6 +33,7 @@ struct qr {
     zbar_image_t *img;
     zbar_processor_t *processor;
     SDL_mutex *lock;
+    FILE *outfile;
     SDL_cond *cond;
     uint8_t *buf;
     int bufsize;
@@ -47,6 +48,9 @@ struct qr *qr_init(const unsigned int width,
     qr->cond = SDL_CreateCond();
     qr->processor = zbar_processor_create(0);
     qr->img = zbar_image_create();
+    qr->outfile = fopen("codes.txt", "w");
+    if(!qr->outfile)
+        fprintf(stderr, "failed to open codes.txt\n");
     qr->bufsize = 0;
     zbar_image_set_format(qr->img, zbar_fourcc('Y', 'U', '1', '2'));
     zbar_image_set_size(qr->img, width, height);
@@ -58,6 +62,7 @@ struct qr *qr_init(const unsigned int width,
 void qr_send_frame(struct qr *qr, AVFrame *frame)
 {
     SDL_LockMutex(qr->lock);
+    printf("Sending frame to QR\n");
     qr->bufsize = av_image_get_buffer_size(frame->format,
                                            frame->width,
                                            frame->height,
@@ -100,7 +105,9 @@ int qr_thread(void *arg)
             unsigned sym_len = zbar_symbol_get_data_length(sym);
             if(type == ZBAR_PARTIAL || type == ZBAR_NONE)
                 continue;
-            printf("Decoded data: %s\n", zbar_symbol_get_data(sym));
+            const char *data = zbar_symbol_get_data(sym);
+            printf("Decoded data: %s\n", data);
+            fprintf(qr->outfile, "%s\n", data);
         }
 
         SDL_UnlockMutex(qr->lock);

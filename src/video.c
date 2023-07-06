@@ -91,7 +91,7 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
     int ret;
     avformat_network_init();
     av->fmt = avformat_alloc_context();
-    AVInputFormat *mpegts = av_find_input_format("mpegts");
+    const AVInputFormat *mpegts = av_find_input_format("mpegts");
     if(!mpegts)
         fprintf(stderr, "mpegts not supported\n");
     if((ret = avformat_open_input(&av->fmt, uri, mpegts, NULL)) < 0) {
@@ -101,6 +101,7 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
     if(avformat_find_stream_info(av->fmt, NULL) < 0)
         fprintf(stderr, "avformat_find_stream_info() failed\n");
 
+    av->audio_idx = -1;
     for(int i = 0; i < av->fmt->nb_streams; i++) {
         printf("Stream #%d: %s\n", i, avcodec_get_name(av->fmt->streams[i]->codecpar->codec_id));
         if(av->fmt->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
@@ -156,20 +157,9 @@ int video_thread(void *arg)
     AVFrame *restrict decoded = video_data->decoded;
     int ret;
 
-    // discard all frames received until now
-    while(ret != AVERROR(EAGAIN)) {
-        if((ret = av_read_frame(av->fmt, av->pkt)) < 0)
-            continue;
-        if((ret = avcodec_send_packet(av->decoder, av->pkt)) < 0)
-            continue;
-        ret = avcodec_receive_frame(av->decoder, decoded);
-    }
-
     while(1) {
         if((ret = av_read_frame(av->fmt, av->pkt)) < 0)
             fprintf(stderr, "av_read_frame() failed\n");
-        if(av->pkt->stream_index == av->audio_idx)
-            continue;
         if((ret = avcodec_send_packet(av->decoder, av->pkt)) < 0)
             fprintf(stderr, "avcodec_send_packet() failed\n");
         video_lock(video_data);
