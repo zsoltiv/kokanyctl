@@ -122,6 +122,7 @@ if cap.get(cv.CAP_PROP_CONVERT_RGB) == 0:
 
 process = start_audio_process()
 still = None
+framenum = 0
 while True:
     ret, frame = cap.read()
     orig = frame.copy()
@@ -132,8 +133,10 @@ while True:
     if still is not None:
         cv.imshow('motion', frame)
         cv.waitKey(1)
-    still = orig
+    if framenum % 10 is 0:
+        still = orig
     if process.poll() is None:
         process = start_audio_process()
+    framenum += 1
 cv.destroyAllWindows()
 cap.release()
