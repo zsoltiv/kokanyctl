@@ -96,8 +96,6 @@ int qr_thread(void *arg)
         if((ret = zbar_process_image(qr->processor, qr->img)) < 0) {
             fprintf(stderr, "zbar_process_image() failed\n");
         }
-        if(!ret)
-            fprintf(stderr, "No QR codes detected\n");
         
         for(const zbar_symbol_t *sym = zbar_image_first_symbol(qr->img); sym; sym = zbar_symbol_next(sym)) {
             zbar_symbol_type_t type = zbar_symbol_get_type(sym);
