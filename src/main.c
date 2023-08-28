@@ -116,9 +116,10 @@ int main(int argc, char *argv[])
         SDL_RenderCopy(rend, co2_present ? present : not_present, NULL, &textrect);
 
         for(int i = 0; i < sizeof(handled_scancodes); i++) {
-            if(keys[handled_scancodes[i]] != prev_keys[handled_scancodes[i]]) {
-                net_send_keycode(remote, net_encode_scancode(handled_scancodes[i], keys[handled_scancodes[i]]));
-                prev_keys[handled_scancodes[i]] = keys[handled_scancodes[i]];
+            uint8_t handled_scancode = handled_scancodes[i];
+            if(keys[handled_scancode] != prev_keys[handled_scancode]) {
+                net_send_keycode(remote, net_encode_scancode(handled_scancode, keys[handled_scancode]));
+                prev_keys[handled_scancode] = keys[handled_scancode];
             }
         }
         if(keys[SDL_SCANCODE_ESCAPE])
