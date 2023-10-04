@@ -1,8 +1,8 @@
 CC ?= cc
-STDC = -std=c17
 INC = `pkg-config --cflags zbar sdl2 SDL2_ttf libavformat libavcodec libavutil`
-CFLAGS += $(INC) -g3 -D_XOPEN_SOURCE=700 -Og $(STDC)
-LDFLAGS += `pkg-config --libs zbar sdl2 SDL2_ttf libavformat libavcodec libavutil`
+CFLAGS ?= -g3 -D_XOPEN_SOURCE=700 -Og
+ALLCFLAGS = $(CFLAGS) $(STDC) -D_XOPEN_SOURCE=700 -std=c17 $(INC)
+LDFLAGS = `pkg-config --libs zbar sdl2 SDL2_ttf libavformat libavcodec libavutil`
 
 BIN ?= kokanyctl
 
@@ -17,11 +17,11 @@ OBJ := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%.o,$(SRC))
 all: $(BIN)
 
 $(BIN): $(OBJ)
-	$(CC) $^ $(CFLAGS) $(LDFLAGS) -o $@
+	$(CC) $^ $(INC) $(ALLCFLAGS) $(LDFLAGS) -o $@
 
 $(BUILDDIR)/%.c.o: $(SRCDIR)/%.c
 	mkdir -p $(BUILDDIR)
-	$(CC) $< -c $(STDC) $(CFLAGS) -o $@
+	$(CC) $< -c $(INC) $(ALLCFLAGS) -o $@
 
 clean:
 	rm -rf $(BUILDDIR) $(BIN)
