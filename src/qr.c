@@ -100,7 +100,6 @@ int qr_thread(void *arg)
         for(const zbar_symbol_t *sym = zbar_image_first_symbol(qr->img); sym; sym = zbar_symbol_next(sym)) {
             zbar_symbol_type_t type = zbar_symbol_get_type(sym);
             printf("QR type: %s\n", zbar_get_symbol_name(type));
-            unsigned sym_len = zbar_symbol_get_data_length(sym);
             if(type == ZBAR_PARTIAL || type == ZBAR_NONE)
                 continue;
             const char *data = zbar_symbol_get_data(sym);
