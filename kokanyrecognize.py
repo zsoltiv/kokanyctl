@@ -133,7 +133,7 @@ while True:
     if still is not None:
         cv.imshow('motion', frame)
         cv.waitKey(1)
-    if framenum % 10 is 0:
+    if framenum % 10 == 0:
         still = orig
     if process.poll() is None:
         process = start_audio_process()
