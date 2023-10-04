@@ -40,8 +40,7 @@ struct qr {
 };
 
 struct qr *qr_init(const unsigned int width,
-                   const unsigned int height,
-                   const enum AVPixelFormat pix_fmt)
+                   const unsigned int height)
 {
     struct qr *qr = malloc(sizeof(struct qr));
     qr->lock = SDL_CreateMutex();

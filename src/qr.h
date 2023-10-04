@@ -29,8 +29,7 @@ extern "C" {
 struct qr;
 
 struct qr *qr_init(const unsigned int width,
-                   const unsigned int height,
-                   const enum AVPixelFormat pix_fmt);
+                   const unsigned int height);
 void qr_send_frame(struct qr *qr, AVFrame *frame);
 int qr_thread(void *arg);
 

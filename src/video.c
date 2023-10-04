@@ -102,7 +102,7 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
         fprintf(stderr, "avformat_find_stream_info() failed\n");
 
     av->audio_idx = -1;
-    for(int i = 0; i < av->fmt->nb_streams; i++) {
+    for(unsigned i = 0; i < av->fmt->nb_streams; i++) {
         printf("Stream #%d: %s\n", i, avcodec_get_name(av->fmt->streams[i]->codecpar->codec_id));
         if(av->fmt->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
             av->video_idx = i;
@@ -122,7 +122,7 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
     video->decoded = av_frame_alloc();
     video->lock = SDL_CreateMutex();
     video->framenum = 0;
-    av->qr = qr_init(video->width, video->height, av->decoder->pix_fmt);
+    av->qr = qr_init(video->width, video->height);
     SDL_CreateThread(qr_thread, "qr", av->qr);
     printf("QR thread initialised\n");
 
