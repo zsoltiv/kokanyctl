@@ -50,7 +50,7 @@ const uint8_t handled_scancodes[] = {
     SDL_SCANCODE_7,
     SDL_SCANCODE_8,
 };
-bool prev_keys[UINT8_MAX] = {0};
+bool prev_keys[INT8_MAX] = {0};
 
 int main(int argc, char *argv[])
 {
