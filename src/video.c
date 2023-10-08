@@ -57,16 +57,6 @@ struct video_data {
     int framenum;
 };
 
-int video_get_width(struct video_data *video_data)
-{
-    return video_data->width;
-}
-
-int video_get_height(struct video_data *video_data)
-{
-    return video_data->height;
-}
-
 SDL_Texture *video_get_screen(struct video_data *video_data)
 {
     return video_data->screen;
