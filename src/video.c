@@ -57,7 +57,7 @@ struct video_data {
     int framenum;
 };
 
-SDL_Texture *video_get_screen(struct video_data *video_data)
+SDL_Texture *video_get_screen(const struct video_data *video_data)
 {
     return video_data->screen;
 }
