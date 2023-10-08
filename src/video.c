@@ -93,7 +93,7 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
 
     av->audio_idx = -1;
     for(unsigned i = 0; i < av->fmt->nb_streams; i++) {
-        printf("Stream #%d: %s\n", i, avcodec_get_name(av->fmt->streams[i]->codecpar->codec_id));
+        printf("Stream #%u: %s\n", i, avcodec_get_name(av->fmt->streams[i]->codecpar->codec_id));
         if(av->fmt->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
             av->video_idx = i;
         else
