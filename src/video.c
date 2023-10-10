@@ -160,12 +160,12 @@ int video_thread(void *arg)
             }
             fprintf(stderr, "avcodec_receive_frame() failed\n");
         }
+        video_unlock(video_data);
         // send every 5th frame to the QR code decoder
         if(video_data->framenum % 5 == 0) {
             printf("Sending frame to QR thread\n");
             qr_send_frame(av->qr, decoded);
         }
-        video_unlock(video_data);
         video_data->framenum++;
     }
 }
