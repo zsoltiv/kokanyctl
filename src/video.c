@@ -54,7 +54,7 @@ struct video_data {
     int width, height;
     SDL_mutex *lock;
     SDL_Texture *screen;
-    int framenum;
+    unsigned framenum;
 };
 
 SDL_Texture *video_get_screen(const struct video_data *video_data)
