@@ -5,3 +5,4 @@ build/*
 *.png
 *.jpeg
 *.jpg
+callgrind.*
