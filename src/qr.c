@@ -19,6 +19,8 @@
 
 #include <libavformat/avformat.h>
 #include <libavutil/imgutils.h>
+#include <libavcodec/avcodec.h>
+#include <libavutil/pixdesc.h>
 #include <zbar.h>
 #include "SDL.h"
 
@@ -40,7 +42,8 @@ struct qr {
 };
 
 struct qr *qr_init(const unsigned int width,
-                   const unsigned int height)
+                   const unsigned int height,
+                   enum AVPixelFormat pix_fmt)
 {
     struct qr *qr = malloc(sizeof(struct qr));
     qr->lock = SDL_CreateMutex();
@@ -51,7 +54,13 @@ struct qr *qr_init(const unsigned int width,
     if(!qr->outfile)
         fprintf(stderr, "failed to open codes.txt\n");
     qr->bufsize = 0;
-    zbar_image_set_format(qr->img, zbar_fourcc('Y', 'U', '1', '2'));
+    uint32_t fourcc = avcodec_pix_fmt_to_codec_tag(pix_fmt);
+    if(!fourcc)
+        fprintf(stderr,
+                "Pixel format %s (%u) has no FourCC!\n",
+                av_get_pix_fmt_name(pix_fmt),
+                pix_fmt);
+    zbar_image_set_format(qr->img, fourcc);
     zbar_image_set_size(qr->img, width, height);
     qr->buf = NULL;
 

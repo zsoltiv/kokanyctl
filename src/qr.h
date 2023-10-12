@@ -20,6 +20,7 @@
 #ifndef QR_H
 #define QR_H
 
+#include <libavutil/pixfmt.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -29,7 +30,8 @@ extern "C" {
 struct qr;
 
 struct qr *qr_init(const unsigned int width,
-                   const unsigned int height);
+                   const unsigned int height,
+                   enum AVPixelFormat pix_fmt);
 void qr_send_frame(struct qr *qr, AVFrame *frame);
 int qr_thread(void *arg);
 
