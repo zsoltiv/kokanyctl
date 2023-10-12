@@ -131,11 +131,11 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
     return video;
 }
 
-void video_lock(struct video_data *video_data)
+inline void video_lock(struct video_data *video_data)
 {
     SDL_LockMutex(video_data->lock);
 }
-void video_unlock(struct video_data *video_data)
+inline void video_unlock(struct video_data *video_data)
 {
     SDL_UnlockMutex(video_data->lock);
 }
