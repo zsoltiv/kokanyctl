@@ -49,6 +49,8 @@ struct qr *qr_init(const unsigned int width,
     qr->lock = SDL_CreateMutex();
     qr->cond = SDL_CreateCond();
     qr->processor = zbar_processor_create(0);
+    zbar_processor_set_config(qr->processor, 0, ZBAR_CFG_ENABLE, 0);
+    zbar_processor_set_config(qr->processor, ZBAR_QRCODE, ZBAR_CFG_ENABLE, 1);
     qr->img = zbar_image_create();
     qr->outfile = fopen("codes.txt", "w");
     if(!qr->outfile)
