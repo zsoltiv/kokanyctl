@@ -28,6 +28,7 @@
 #include "SDL.h"
 
 #include "qr.h"
+#include "framelist.h"
 #include "utils.h"
 #include "video.h"
 
@@ -50,6 +51,7 @@ struct av {
 struct video_data {
     struct av av;
     AVFrame *decoded;
+    struct frame *frames;
     // shared data
     int width, height;
     SDL_mutex *lock;
@@ -110,6 +112,7 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
 
     av->pkt = av_packet_alloc();
     video->decoded = av_frame_alloc();
+    video->frames = frame_list_new(6);
     video->lock = SDL_CreateMutex();
     video->framenum = 0;
     av->qr = qr_init(video->width, video->height, av->decoder->pix_fmt);
