@@ -72,7 +72,6 @@ struct qr *qr_init(const unsigned int width,
 void qr_send_frame(struct qr *qr, AVFrame *frame)
 {
     SDL_LockMutex(qr->lock);
-    printf("Sending frame to QR\n");
     qr->bufsize = av_image_get_buffer_size(frame->format,
                                            frame->width,
                                            frame->height,
@@ -109,7 +108,6 @@ int qr_thread(void *arg)
         
         for(const zbar_symbol_t *sym = zbar_image_first_symbol(qr->img); sym; sym = zbar_symbol_next(sym)) {
             zbar_symbol_type_t type = zbar_symbol_get_type(sym);
-            printf("QR type: %s\n", zbar_get_symbol_name(type));
             if(type == ZBAR_PARTIAL || type == ZBAR_NONE)
                 continue;
             const char *data = zbar_symbol_get_data(sym);
