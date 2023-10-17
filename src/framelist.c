@@ -35,9 +35,12 @@ struct frame *frame_list_new(const int elems)
 struct frame *frame_list_lock_next(struct frame *current)
 {
     struct frame *p = current;
+    int ret;
     do {
         p = p->next;
-    } while(SDL_TryLockMutex(p->lock) == SDL_MUTEX_TIMEDOUT);
+    } while((ret = SDL_TryLockMutex(p->lock)) == SDL_MUTEX_TIMEDOUT);
+    if(ret < 0)
+        fprintf(stderr, "locking fail: %s\n", SDL_GetError());
     return p;
 }
 
@@ -45,4 +48,13 @@ void frame_list_unlock_frame(struct frame *f, bool isready)
 {
     f->ready = isready;
     SDL_UnlockMutex(f->lock);
+}
+
+void frame_print(struct frame *f)
+{
+    printf("frame={ready=%d,avf=%p,avf->data[0]=%p,next=%p}\n",
+           f->ready,
+           f->avf,
+           f->avf->data[0],
+           f->next);
 }

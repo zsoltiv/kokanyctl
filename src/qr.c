@@ -28,34 +28,32 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include "SDL_mutex.h"
+#include "framelist.h"
 #include "qr.h"
 
 struct qr {
     zbar_image_t *img;
     zbar_processor_t *processor;
-    SDL_mutex *lock;
     FILE *outfile;
-    SDL_cond *cond;
+    struct frame *frames;
     uint8_t *buf;
     int bufsize;
 };
 
-struct qr *qr_init(const unsigned int width,
+struct qr *qr_init(struct frame *f,
+                   const unsigned int width,
                    const unsigned int height,
                    enum AVPixelFormat pix_fmt)
 {
     struct qr *qr = malloc(sizeof(struct qr));
-    qr->lock = SDL_CreateMutex();
-    qr->cond = SDL_CreateCond();
     qr->processor = zbar_processor_create(0);
+    qr->frames = f;
     zbar_processor_set_config(qr->processor, 0, ZBAR_CFG_ENABLE, 0);
     zbar_processor_set_config(qr->processor, ZBAR_QRCODE, ZBAR_CFG_ENABLE, 1);
     qr->img = zbar_image_create();
     qr->outfile = fopen("codes.txt", "w");
     if(!qr->outfile)
         fprintf(stderr, "failed to open codes.txt\n");
-    qr->bufsize = 0;
     uint32_t fourcc = avcodec_pix_fmt_to_codec_tag(pix_fmt);
     if(!fourcc)
         fprintf(stderr,
@@ -64,47 +62,48 @@ struct qr *qr_init(const unsigned int width,
                 pix_fmt);
     zbar_image_set_format(qr->img, fourcc);
     zbar_image_set_size(qr->img, width, height);
-    qr->buf = NULL;
 
     return qr;
 }
 
-void qr_send_frame(struct qr *qr, AVFrame *frame)
+static void qr_copy_frame(struct frame *f, struct qr *qr)
 {
-    SDL_LockMutex(qr->lock);
-    qr->bufsize = av_image_get_buffer_size(frame->format,
-                                           frame->width,
-                                           frame->height,
+    qr->bufsize = av_image_get_buffer_size(f->avf->format,
+                                           f->avf->width,
+                                           f->avf->height,
                                            1);
-    if(qr->bufsize < 0)
-        fprintf(stderr, "av_image_get_buffer_size() failed\n");
+    if(qr->bufsize <= 0) {
+        fprintf(stderr, "copy gebasz\n");
+        return;
+    }
     qr->buf = malloc(qr->bufsize);
     if(av_image_copy_to_buffer(qr->buf,
                                qr->bufsize,
-                               (const uint8_t *const *)frame->data,
-                               frame->linesize,
-                               frame->format,
-                               frame->width,
-                               frame->height,
+                               (const uint8_t *const *)f->avf->data,
+                               f->avf->linesize,
+                               f->avf->format,
+                               f->avf->width,
+                               f->avf->height,
                                1) < 0)
         fprintf(stderr, "av_image_copy_to_buffer() failed\n");
-    SDL_UnlockMutex(qr->lock);
-    SDL_CondSignal(qr->cond);
 }
 
 int qr_thread(void *arg)
 {
     struct qr *qr = (struct qr *)arg;
+    struct frame *f = qr->frames;
     int ret;
     while(true) {
-        SDL_LockMutex(qr->lock);
-        SDL_CondWait(qr->cond, qr->lock);
-
-        if(qr->buf)
-            zbar_image_set_data(qr->img, qr->buf, qr->bufsize, zbar_image_free_data);
-        if((ret = zbar_process_image(qr->processor, qr->img)) < 0) {
-            fprintf(stderr, "zbar_process_image() failed\n");
+        while(!((f = frame_list_lock_next(f))->ready)) {
+            frame_list_unlock_frame(f, false);
         }
+        qr_copy_frame(f, qr);
+        frame_list_unlock_frame(f, true);
+        if(!qr->buf || qr->bufsize <= 0) continue;
+
+        zbar_image_set_data(qr->img, qr->buf, qr->bufsize, zbar_image_free_data);
+        if((ret = zbar_process_image(qr->processor, qr->img)) < 0)
+            fprintf(stderr, "zbar_process_image() failed\n");
         
         for(const zbar_symbol_t *sym = zbar_image_first_symbol(qr->img); sym; sym = zbar_symbol_next(sym)) {
             zbar_symbol_type_t type = zbar_symbol_get_type(sym);
@@ -114,8 +113,6 @@ int qr_thread(void *arg)
             printf("Decoded data: %s\n", data);
             fprintf(qr->outfile, "%s\n", data);
         }
-
-        SDL_UnlockMutex(qr->lock);
     }
     return 0;
 }

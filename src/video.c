@@ -50,8 +50,7 @@ struct av {
 
 struct video_data {
     struct av av;
-    AVFrame *decoded;
-    struct frame *frames;
+    struct frame *frames, *current;
     // shared data
     int width, height;
     SDL_mutex *lock;
@@ -67,13 +66,18 @@ SDL_Texture *video_get_screen(const struct video_data *video_data)
 // must be called from main thread
 void video_update_screen(struct video_data *video_data)
 {
+    struct frame *f = video_data->frames;
+    while(!((f = frame_list_lock_next(f))->ready)) {
+        frame_list_unlock_frame(f, false);
+    }
     SDL_UpdateYUVTexture(video_data->screen, NULL,
-                         video_data->decoded->data[0],
-                         video_data->decoded->linesize[0],
-                         video_data->decoded->data[1],
-                         video_data->decoded->linesize[1],
-                         video_data->decoded->data[2],
-                         video_data->decoded->linesize[2]);
+                         f->avf->data[0],
+                         f->avf->linesize[0],
+                         f->avf->data[1],
+                         f->avf->linesize[1],
+                         f->avf->data[2],
+                         f->avf->linesize[2]);
+    frame_list_unlock_frame(f, false);
 }
 
 struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
@@ -111,11 +115,13 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
     avcodec_open2(av->decoder, codec, NULL);
 
     av->pkt = av_packet_alloc();
-    video->decoded = av_frame_alloc();
     video->frames = frame_list_new(6);
-    video->lock = SDL_CreateMutex();
+    video->current = video->frames;
     video->framenum = 0;
-    av->qr = qr_init(video->width, video->height, av->decoder->pix_fmt);
+    av->qr = qr_init(video->frames,
+                     video->width,
+                     video->height,
+                     av->decoder->pix_fmt);
     SDL_CreateThread(qr_thread, "qr", av->qr);
     printf("QR thread initialised\n");
 
@@ -134,20 +140,11 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
     return video;
 }
 
-inline void video_lock(struct video_data *video_data)
-{
-    SDL_LockMutex(video_data->lock);
-}
-inline void video_unlock(struct video_data *video_data)
-{
-    SDL_UnlockMutex(video_data->lock);
-}
-
 int video_thread(void *arg)
 {
     struct video_data *video_data = (struct video_data *)arg;
+    struct frame *current = video_data->current;
     struct av *av = &video_data->av;
-    AVFrame *restrict decoded = video_data->decoded;
     int ret;
 
     while(1) {
@@ -155,20 +152,18 @@ int video_thread(void *arg)
             fprintf(stderr, "av_read_frame() failed\n");
         if((ret = avcodec_send_packet(av->decoder, av->pkt)) < 0)
             fprintf(stderr, "avcodec_send_packet() failed\n");
-        video_lock(video_data);
-        if((ret = avcodec_receive_frame(av->decoder, decoded)) < 0) {
-            video_unlock(video_data);
+        while((current = frame_list_lock_next(current))->ready)
+            frame_list_unlock_frame(current, true);
+        if((ret = avcodec_receive_frame(av->decoder, current->avf)) < 0) {
+            frame_list_unlock_frame(current, false);
             if(ret == AVERROR(EAGAIN)) {
                 continue;
             }
             fprintf(stderr, "avcodec_receive_frame() failed\n");
         }
-        video_unlock(video_data);
-        // send every 5th frame to the QR code decoder
-        if(video_data->framenum % 5 == 0) {
-            printf("Sending frame to QR thread\n");
-            qr_send_frame(av->qr, decoded);
-        }
+        frame_list_unlock_frame(current, true);
         video_data->framenum++;
     }
+
+    return ret;
 }

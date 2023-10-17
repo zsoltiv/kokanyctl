@@ -102,13 +102,11 @@ int main(int argc, char *argv[])
         SDL_PumpEvents();
 
         SDL_RenderClear(rend);
-        video_lock(video_data);
         video_update_screen(video_data);
         SDL_RenderCopy(rend, video_get_screen(video_data), NULL, NULL);
-        video_unlock(video_data);
         bool co2_present;
         if(recv(sensor, &co2_present, sizeof(bool), 0) < 0) {
-            if(errno != EAGAIN && errno != EWOULDBLOCK) {
+            if(errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
                 perror("recv()");
                 exit(1);
             }
