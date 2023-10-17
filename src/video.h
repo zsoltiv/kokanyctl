@@ -32,8 +32,6 @@ extern "C" {
 struct video_data;
 
 struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri);
-void video_lock(struct video_data *video_data);
-void video_unlock(struct video_data *video_data);
 SDL_Texture *video_get_screen(const struct video_data *video_data);
 void video_update_screen(struct video_data *video_data);
 void video_scan_qr(struct video_data *video);

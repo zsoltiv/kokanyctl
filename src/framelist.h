@@ -16,5 +16,6 @@ struct frame {
 struct frame *frame_list_new(const int elems);
 struct frame *frame_list_lock_next(struct frame *current);
 void frame_list_unlock_frame(struct frame *f, bool isready);
+void frame_print(struct frame *f);
 
 #endif
