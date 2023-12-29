@@ -45,7 +45,8 @@ def draw_motion(still, current):
         current[rows[i], cols[i]] = MOTION_COLOR
 
 
-IMGSZ = 1280
+IMGSZ = 640
+"""
 CLASSES = ['BLASTING AGENTS',
            'COMBUSTIBLE',
            'CORROSIVE',
@@ -62,39 +63,51 @@ CLASSES = ['BLASTING AGENTS',
            'POISON',
            'RADIOACTIVE',
            'SUD LHOR']
+"""
+CLASSES = [('Blas', 'Blasting Agents'),
+           ('COR', 'Corrosive'),
+           ('DWW', ''),
+           ('Expl', 'Explosives'),
+           ('FOil', 'Fuel Oil'),
+           ('FS', 'Flammable solid'),
+           ('FlamG', 'Flammable Gas'),
+           ('IH', 'Inhalation Hazard'),
+           ('NF', 'Non-Flammable Gas'),
+           ('O2', 'Oxygen'),
+           ('OP', 'Organic Peroxide'),
+           ('Oxi', 'Oxilidizer'),
+           ('PO', ''),
+           ('RA', 'Radioactive'),
+           ('SC', '')]
 url = 'tcp://' + argv[-1] + ':1338'
-audio_url = 'tcp://' + argv[-1] + ':1340'
+#audio_url = 'tcp://' + argv[-1] + ':1340'
 model = cv.dnn.readNet('yolo/model.onnx')
 model.setPreferableBackend(cv.dnn.DNN_BACKEND_OPENCV)
 model.setPreferableTarget(cv.dnn.DNN_TARGET_CPU)
 
 
-def start_audio_process():
-    return Popen([which('ffplay'), '-vn', audio_url, '-nodisp'])
+#def start_audio_process():
+#    return Popen([which('ffplay'), '-vn', audio_url, '-nodisp'])
 
 
-def draw_bounding_box(frame, detection):
-    x, y, w, h = detection[0], detection[1], detection[2], detection[3]
+def draw_bounding_box(frame, x, y, w, h, obj, likely):
     WIDTH_SCALE = frame.shape[1] / IMGSZ
     HEIGHT_SCALE = frame.shape[0] / IMGSZ
-    x = int(abs(x - w / 2) * WIDTH_SCALE)
+    print(likely.shape)
+    x = int((x - w / 2) * WIDTH_SCALE)
     w = int(w * WIDTH_SCALE)
-    y = int(abs(y - h / 2) * HEIGHT_SCALE)
+    y = int((y - h / 2) * HEIGHT_SCALE)
     h = int(h * HEIGHT_SCALE)
-    classes = detection[5:]
-    highest = 0
-    for i in range(len(classes)):
-        if classes[i] > classes[highest]:
-            highest = i
-    print(CLASSES[highest])
-    cv.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+    cv.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 32)
+    print(f'i={obj}')
     cv.putText(frame,
-               CLASSES[highest],
+               CLASSES[obj][1] if CLASSES[obj][1] != '' else CLASSES[obj][0],
                (x, y - 10),
                cv.FONT_HERSHEY_SIMPLEX,
-               0.9,
+               3,
                (0, 255, 0),
-               2)
+               8)
 
 
 def feed_model(frame):
@@ -104,11 +117,19 @@ def feed_model(frame):
     model.setInput(blob)
     predictions = model.forward()[0]
     confident = []
-    for i in range(predictions.shape[0]):
-        if predictions[i][4] > CONFIDENCE_THRESHOLD:
-            confident.append(predictions[i])
-    for prediction in confident:
-        draw_bounding_box(frame, prediction)
+    print(predictions.shape)
+    for i in range(4, predictions.shape[0]):
+        most_likely = np.argmax(predictions[i])
+        print(f'most_likely={most_likely}')
+        if predictions[i][most_likely] > CONFIDENCE_THRESHOLD:
+            confident.append((i - 4, most_likely))
+    for i, likely in confident:
+        x = predictions[0][likely]
+        y = predictions[1][likely]
+        w = predictions[2][likely]
+        h = predictions[3][likely]
+        print(f'x={x}\ty={y}\tw={w}\th={h}')
+        draw_bounding_box(frame, x, y, w, h, i, likely)
 
 
 cap = cv.VideoCapture(url, cv.CAP_FFMPEG)
@@ -120,7 +141,7 @@ if cap.get(cv.CAP_PROP_CONVERT_RGB) == 0:
     exit('CAP_PROP_CONVERT_RGB not supported by FFmpeg backend')
 
 
-process = start_audio_process()
+#process = start_audio_process()
 still = None
 framenum = 0
 while True:
@@ -135,8 +156,8 @@ while True:
         cv.waitKey(1)
     if framenum % 10 == 0:
         still = orig
-    if process.poll() is None:
-        process = start_audio_process()
+#    if process.poll() is None:
+#        process = start_audio_process()
     framenum += 1
 cv.destroyAllWindows()
 cap.release()
