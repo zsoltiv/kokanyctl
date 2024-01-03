@@ -46,31 +46,13 @@ def draw_motion(still, current):
 
 
 IMGSZ = 640
-"""
-CLASSES = ['BLASTING AGENTS',
-           'COMBUSTIBLE',
-           'CORROSIVE',
-           'DANGEROUS',
-           'EXPLOSIVES',
-           'FLAMMABLE GAS',
-           'FLAMMABLE SOLID',
-           'FUEL OIL',
-           'INHALATION HAZARD',
-           'NON-FLAMMABLE GAS',
-           'ORGANIC PEROXIDE',
-           'OXIiDIZER',
-           'OXYGEN',
-           'POISON',
-           'RADIOACTIVE',
-           'SUD LHOR']
-"""
 CLASSES = [('Blas', 'Blasting Agents'),
            ('COR', 'Corrosive'),
-           ('DWW', ''),
+           ('DWW', 'Flammable Gas'),
            ('Expl', 'Explosives'),
            ('FOil', 'Fuel Oil'),
            ('FS', 'Flammable solid'),
-           ('FlamG', 'Flammable Gas'),
+           ('FlamG', ''),
            ('IH', 'Inhalation Hazard'),
            ('NF', 'Non-Flammable Gas'),
            ('O2', 'Oxygen'),
@@ -78,7 +60,7 @@ CLASSES = [('Blas', 'Blasting Agents'),
            ('Oxi', 'Oxilidizer'),
            ('PO', ''),
            ('RA', 'Radioactive'),
-           ('SC', '')]
+           ('SC', 'Spontaneously Combustible')]
 url = 'tcp://' + argv[-1] + ':1338'
 #audio_url = 'tcp://' + argv[-1] + ':1340'
 model = cv.dnn.readNet('yolo/model.onnx')
@@ -90,17 +72,15 @@ model.setPreferableTarget(cv.dnn.DNN_TARGET_CPU)
 #    return Popen([which('ffplay'), '-vn', audio_url, '-nodisp'])
 
 
-def draw_bounding_box(frame, x, y, w, h, obj, likely):
+def draw_bounding_box(frame, x, y, w, h, obj):
     WIDTH_SCALE = frame.shape[1] / IMGSZ
     HEIGHT_SCALE = frame.shape[0] / IMGSZ
-    print(likely.shape)
-    x = int((x - w / 2) * WIDTH_SCALE)
+    x = int(x * WIDTH_SCALE)
     w = int(w * WIDTH_SCALE)
-    y = int((y - h / 2) * HEIGHT_SCALE)
+    y = int(y * HEIGHT_SCALE)
     h = int(h * HEIGHT_SCALE)
 
     cv.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 32)
-    print(f'i={obj}')
     cv.putText(frame,
                CLASSES[obj][1] if CLASSES[obj][1] != '' else CLASSES[obj][0],
                (x, y - 10),
@@ -110,26 +90,42 @@ def draw_bounding_box(frame, x, y, w, h, obj, likely):
                8)
 
 
+def box(row):
+    # [x y w h]
+    return [
+        row[0] - row[2] / 2,
+        row[1] - row[3] / 2,
+        row[2],
+        row[3],
+    ]
+
+
 def feed_model(frame):
-    CONFIDENCE_THRESHOLD = 0.5
-    foo = frame.copy()
-    blob = cv.dnn.blobFromImage(foo, 1 / 255.0, (IMGSZ, IMGSZ), swapRB=False)
+    CONFIDENCE_THRESHOLD = 0.25
+    blob = cv.dnn.blobFromImage(frame, 1 / 255, (IMGSZ, IMGSZ), swapRB=True)
     model.setInput(blob)
-    predictions = model.forward()[0]
-    confident = []
-    print(predictions.shape)
-    for i in range(4, predictions.shape[0]):
-        most_likely = np.argmax(predictions[i])
-        print(f'most_likely={most_likely}')
-        if predictions[i][most_likely] > CONFIDENCE_THRESHOLD:
-            confident.append((i - 4, most_likely))
-    for i, likely in confident:
-        x = predictions[0][likely]
-        y = predictions[1][likely]
-        w = predictions[2][likely]
-        h = predictions[3][likely]
-        print(f'x={x}\ty={y}\tw={w}\th={h}')
-        draw_bounding_box(frame, x, y, w, h, i, likely)
+    predictions = np.transpose(model.forward()[0])
+    rows = predictions.shape[0]
+    boxes = []
+    confidences = []
+    class_ids = []
+
+    for i in range(rows):
+        _, confidence, _, (_, class_id) = cv.minMaxLoc(predictions[i][4:])
+        if confidence >= CONFIDENCE_THRESHOLD:
+            boxes.append(box(predictions[i]))
+            confidences.append(confidence)
+            class_ids.append(class_id)
+
+    indices = cv.dnn.NMSBoxes(boxes,
+                              confidences,
+                              CONFIDENCE_THRESHOLD,
+                              0.45,
+                              0.5)
+    for i in indices:
+        x, y, w, h = boxes[i]
+        class_id = class_ids[i]
+        draw_bounding_box(frame, x, y, w, h, class_id)
 
 
 cap = cv.VideoCapture(url, cv.CAP_FFMPEG)
