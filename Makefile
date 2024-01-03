@@ -14,7 +14,7 @@ OBJ := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%.o,$(SRC))
 
 .PHONY: clean
 
-all: $(BIN)
+all: $(BIN) yolo/model.onnx
 
 $(BIN): $(OBJ)
 	$(CC) $^ $(INC) $(ALLCFLAGS) $(LDFLAGS) -o $@
@@ -22,6 +22,9 @@ $(BIN): $(OBJ)
 $(BUILDDIR)/%.c.o: $(SRCDIR)/%.c
 	mkdir -p $(BUILDDIR)
 	$(CC) $< -c $(INC) $(ALLCFLAGS) -o $@
+
+yolo/model.onnx: yolo/model.pt
+	ultralytics export model=$< format=onnx $(UFLAGS) opset=12
 
 clean:
 	rm -rf $(BUILDDIR) $(BIN)
