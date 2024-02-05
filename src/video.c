@@ -87,10 +87,10 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
     int ret;
     avformat_network_init();
     av->fmt = avformat_alloc_context();
-    const AVInputFormat *mpegts = av_find_input_format("mpegts");
-    if(!mpegts)
-        fprintf(stderr, "mpegts not supported\n");
-    if((ret = avformat_open_input(&av->fmt, uri, mpegts, NULL)) < 0) {
+    const AVInputFormat *mjpeg = av_find_input_format("mjpeg");
+    if(!mjpeg)
+        fprintf(stderr, "mjpeg not supported\n");
+    if((ret = avformat_open_input(&av->fmt, uri, mjpeg, NULL)) < 0) {
         fprintf(stderr, "avformat_open_input() failed: %s\n", av_err2str(ret));
     }
     fprintf(stderr, "Format: %s\n", av->fmt->iformat->long_name);
