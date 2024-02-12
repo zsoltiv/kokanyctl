@@ -104,7 +104,16 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
     const AVInputFormat *mjpeg = av_find_input_format("mjpeg");
     if(!mjpeg)
         fprintf(stderr, "mjpeg not supported\n");
-    if((ret = avformat_open_input(&av->fmt, uri, mjpeg, NULL)) < 0) {
+    AVDictionary *in_opts = NULL;
+    if((ret = av_dict_set(&in_opts,
+                          "fflags",
+                          "nobuffer",
+                          0)) < 0) {
+        fprintf(stderr, "av_dict_set(): %s\n", av_err2str(ret));
+        return NULL;
+    }
+
+    if((ret = avformat_open_input(&av->fmt, uri, mjpeg, &in_opts)) < 0) {
         fprintf(stderr, "avformat_open_input() failed: %s\n", av_err2str(ret));
     }
     fprintf(stderr, "Format: %s\n", av->fmt->iformat->long_name);
