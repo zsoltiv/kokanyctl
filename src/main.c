@@ -79,7 +79,11 @@ int main(int argc, char *argv[])
     if(!rend)
         ctl_die("SDL renderer creation error: %s\n", SDL_GetError());
 
-    const char *stream_uri = net_ffmpeg_format_url(argv[1], PORT_VIDEO);
+    const char *stream_uri = video_get_sock_path();
+    if(!stream_uri) {
+        fprintf(stderr, "XDG_RUNTIME_DIR must be set\n");
+        return 1;
+    }
     struct video_data *video_data = video_init(rend, stream_uri);
     SDL_CreateThread(video_thread, "video", video_data);
     int remote = net_connect_to_remote(argv[1], PORT_CTL);

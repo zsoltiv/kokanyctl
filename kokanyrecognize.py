@@ -26,7 +26,7 @@ from subprocess import Popen
 from shutil import which
 
 if len(argv) < 2:
-    exit('No IP address provided')
+    exit('No socket path provided')
 
 
 def draw_motion(still, current):
@@ -61,7 +61,7 @@ CLASSES = [('Blas', 'Blasting Agents'),
            ('PO', ''),
            ('RA', 'Radioactive'),
            ('SC', 'Spontaneously Combustible')]
-url = 'tcp://' + argv[-1] + ':1338'
+url = 'unix:' + argv[-1]
 #audio_url = 'tcp://' + argv[-1] + ':1340'
 model = cv.dnn.readNet('yolo/model.onnx')
 model.setPreferableBackend(cv.dnn.DNN_BACKEND_OPENCV)
