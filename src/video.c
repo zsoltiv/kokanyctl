@@ -33,7 +33,7 @@
 #include "video.h"
 
 /*
- * This thread receives video and audio data
+ * This thread receives video data
  * over a socket and decodes them for use with SDL2
 */
 
@@ -43,7 +43,7 @@ struct av {
     */
     AVFormatContext *fmt;
     AVCodecContext *decoder;
-    int audio_idx, video_idx;
+    int video_idx;
     AVPacket *pkt;
     struct qr *qr;
 };
@@ -120,13 +120,10 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
     if(avformat_find_stream_info(av->fmt, NULL) < 0)
         fprintf(stderr, "avformat_find_stream_info() failed\n");
 
-    av->audio_idx = -1;
     for(unsigned i = 0; i < av->fmt->nb_streams; i++) {
         printf("Stream #%u: %s\n", i, avcodec_get_name(av->fmt->streams[i]->codecpar->codec_id));
         if(av->fmt->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
             av->video_idx = i;
-        else
-            av->audio_idx = i;
     }
     AVStream *stream = av->fmt->streams[av->video_idx];
     const AVCodec *codec = avcodec_find_decoder(stream->codecpar->codec_id);
