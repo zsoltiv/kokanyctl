@@ -58,20 +58,6 @@ struct video_data {
     unsigned framenum;
 };
 
-const char *video_get_sock_path(void)
-{
-    const char *const xdg_runtime_dir = getenv("XDG_RUNTIME_DIR");
-    if(!xdg_runtime_dir) {
-        return NULL;
-    }
-    static const char *const prefix = "unix:";
-    static const char *const sockfile = "kokanyctl.sock";
-    size_t bufsize = strlen(prefix) + strlen(xdg_runtime_dir) + 1 + strlen(sockfile) + 1;
-    char *buf = calloc(bufsize, 1);
-    snprintf(buf, bufsize, "%s%s/%s", prefix, xdg_runtime_dir, sockfile);
-    return buf;
-}
-
 SDL_Texture *video_get_screen(const struct video_data *video_data)
 {
     return video_data->screen;
@@ -113,7 +99,7 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
         return NULL;
     }
 
-    if((ret = avformat_open_input(&av->fmt, uri, mjpeg, &in_opts)) < 0) {
+    if((ret = avformat_open_input(&av->fmt, uri, NULL, &in_opts)) < 0) {
         fprintf(stderr, "avformat_open_input() failed: %s\n", av_err2str(ret));
     }
     fprintf(stderr, "Format: %s\n", av->fmt->iformat->long_name);
