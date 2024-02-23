@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
     if(!rend)
         ctl_die("SDL renderer creation error: %s\n", SDL_GetError());
 
-    const char *stream_uri = video_get_sock_path();
+    const char *stream_uri = net_ffmpeg_format_url("udp", argv[1], PORT_VIDEO);
     if(!stream_uri) {
         fprintf(stderr, "XDG_RUNTIME_DIR must be set\n");
         return 1;

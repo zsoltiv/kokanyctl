@@ -36,8 +36,6 @@
 #include "utils.h"
 #include "net.h"
 
-#define NET_FFMPEG_PROTO "tcp://"
-
 static void net_resolve_host(struct addrinfo **ai,
                                         const char *remote,
                                         const char *port)
@@ -96,17 +94,17 @@ uint8_t net_encode_scancode(uint8_t scancode, bool pressed)
     return (uint8_t)SDL_GetKeyFromScancode(scancode) | pressed_u8;
 }
 
-const char *net_ffmpeg_format_url(const char *ip_string, const char *port)
+const char *net_ffmpeg_format_url(const char *proto, const char *ip_string, const char *port)
 {
     size_t port_sz = strlen(port);
     size_t ip_sz = strlen(ip_string);
-    size_t ffmpeg_proto_sz = strlen(NET_FFMPEG_PROTO);
-    size_t total = ffmpeg_proto_sz + ip_sz + port_sz + 2;
-    char *buf = calloc(total + 1, 1);
+    size_t ffmpeg_proto_sz = strlen(proto);
+    size_t total = ffmpeg_proto_sz + ip_sz + port_sz + 5;
+    char *buf = calloc(total, 1);
     snprintf(buf,
              total,
-             "%s%s:%s",
-             NET_FFMPEG_PROTO,
+             "%s://%s:%s",
+             proto,
              ip_string,
              port);
     printf("URL %s\n", buf);
