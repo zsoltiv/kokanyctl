@@ -94,7 +94,15 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
     if((ret = av_dict_set(&in_opts,
                           "fflags",
                           "nobuffer",
-                          0)) < 0) {
+                          0)) < 0 ||
+       (ret = av_dict_set(&in_opts,
+                          "overrun_nonfatal",
+                          "1",
+                          0)) < 0 ||
+       (ret = av_dict_set(&in_opts,
+                          "fifo_size",
+                          "40960", // 4096 * 10
+                          0))) {
         fprintf(stderr, "av_dict_set(): %s\n", av_err2str(ret));
         return NULL;
     }
@@ -121,7 +129,7 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
     avcodec_open2(av->decoder, codec, NULL);
 
     av->pkt = av_packet_alloc();
-    video->frames = frame_list_new(6);
+    video->frames = frame_list_new(32);
     video->current = video->frames;
     video->framenum = 0;
     av->qr = qr_init(video->frames,
@@ -141,7 +149,7 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
     if(!video->screen)
         ctl_die("%s\n", SDL_GetError());
 
-    av_log_set_level(AV_LOG_PANIC);
+    //av_log_set_level(AV_LOG_PANIC);
 
     return video;
 }
@@ -154,10 +162,12 @@ int video_thread(void *arg)
     int ret;
 
     while(1) {
-        if((ret = av_read_frame(av->fmt, av->pkt)) < 0)
-            fprintf(stderr, "av_read_frame() failed\n");
+        if((ret = av_read_frame(av->fmt, av->pkt)) < 0) {
+            fprintf(stderr, "av_read_frame() failed: %s\n", av_err2str(ret));
+            continue;
+        }
         if((ret = avcodec_send_packet(av->decoder, av->pkt)) < 0)
-            fprintf(stderr, "avcodec_send_packet() failed\n");
+            fprintf(stderr, "avcodec_send_packet() failed: %s\n", av_err2str(ret));
         while((current = frame_list_lock_next(current))->ready)
             frame_list_unlock_frame(current, true);
         if((ret = avcodec_receive_frame(av->decoder, current->avf)) < 0) {
@@ -165,7 +175,7 @@ int video_thread(void *arg)
             if(ret == AVERROR(EAGAIN)) {
                 continue;
             }
-            fprintf(stderr, "avcodec_receive_frame() failed\n");
+            fprintf(stderr, "avcodec_receive_frame() failed: %s\n", av_err2str(ret));
         }
         frame_list_unlock_frame(current, true);
         video_data->framenum++;
