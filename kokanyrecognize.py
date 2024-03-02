@@ -22,11 +22,9 @@ along with kokanyctl. If not, see <https://www.gnu.org/licenses/>.
 import cv2 as cv
 import numpy as np
 from sys import argv, exit
-from subprocess import Popen
-from shutil import which
 
 if len(argv) < 2:
-    exit('No socket path provided')
+    exit('No IP address provided')
 
 
 def draw_motion(still, current):
@@ -61,15 +59,10 @@ CLASSES = [('Blas', 'Blasting Agents'),
            ('PO', ''),
            ('RA', 'Radioactive'),
            ('SC', 'Spontaneously Combustible')]
-url = 'unix:' + argv[-1]
-#audio_url = 'tcp://' + argv[-1] + ':1340'
+url = 'udp://' + argv[-1] + ':1338'
 model = cv.dnn.readNet('yolo/model.onnx')
 model.setPreferableBackend(cv.dnn.DNN_BACKEND_OPENCV)
 model.setPreferableTarget(cv.dnn.DNN_TARGET_CPU)
-
-
-#def start_audio_process():
-#    return Popen([which('ffplay'), '-vn', audio_url, '-nodisp'])
 
 
 def draw_bounding_box(frame, x, y, w, h, obj):
@@ -137,7 +130,6 @@ if cap.get(cv.CAP_PROP_CONVERT_RGB) == 0:
     exit('CAP_PROP_CONVERT_RGB not supported by FFmpeg backend')
 
 
-#process = start_audio_process()
 still = None
 framenum = 0
 while True:
@@ -152,8 +144,6 @@ while True:
         cv.waitKey(1)
     if framenum % 10 == 0:
         still = orig
-#    if process.poll() is None:
-#        process = start_audio_process()
     framenum += 1
 cv.destroyAllWindows()
 cap.release()
