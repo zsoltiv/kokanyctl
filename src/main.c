@@ -24,6 +24,7 @@
 #include <sys/socket.h>
 
 #include "SDL.h"
+#include "SDL_events.h"
 #include "SDL_ttf.h"
 
 #include "net.h"
@@ -50,7 +51,6 @@ const uint8_t handled_scancodes[] = {
     SDL_SCANCODE_7,
     SDL_SCANCODE_8,
 };
-bool prev_keys[INT8_MAX] = {0};
 
 int main(int argc, char *argv[])
 {
@@ -102,8 +102,30 @@ int main(int argc, char *argv[])
 
     const SDL_Rect textrect = {0, 0, 300, 64};
 
-    while(true) {
-        SDL_PumpEvents();
+    bool quit = false;
+    SDL_Event ev;
+    while(!quit) {
+        while(SDL_PollEvent(&ev)) {
+            switch(ev.type) {
+                case SDL_QUIT:
+                    quit = true;
+                    break;
+                case SDL_KEYUP:
+                    for(size_t i = 0; i < sizeof(handled_scancodes); i++)
+                        if(ev.key.keysym.scancode == handled_scancodes[i]) {
+                            net_send_keycode(remote, net_encode_scancode(ev.key.keysym.scancode, false));
+                            break;
+                        }
+                    break;
+                case SDL_KEYDOWN:
+                    for(size_t i = 0; i < sizeof(handled_scancodes); i++)
+                        if(ev.key.keysym.scancode == handled_scancodes[i]) {
+                            net_send_keycode(remote, net_encode_scancode(ev.key.keysym.scancode, true));
+                            break;
+                        }
+                    break;
+            }
+        }
 
         SDL_RenderClear(rend);
         video_update_screen(video_data);
@@ -116,16 +138,6 @@ int main(int argc, char *argv[])
             }
         }
         SDL_RenderCopy(rend, co2_present ? present : not_present, NULL, &textrect);
-
-        for(size_t i = 0; i < sizeof(handled_scancodes); i++) {
-            uint8_t handled_scancode = handled_scancodes[i];
-            if(keys[handled_scancode] != prev_keys[handled_scancode]) {
-                net_send_keycode(remote, net_encode_scancode(handled_scancode, keys[handled_scancode]));
-                prev_keys[handled_scancode] = keys[handled_scancode];
-            }
-        }
-        if(keys[SDL_SCANCODE_ESCAPE])
-            break;
 
         SDL_RenderPresent(rend);
     }
