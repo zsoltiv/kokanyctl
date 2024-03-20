@@ -26,11 +26,12 @@ extern "C" {
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <sys/socket.h>
 
-int net_connect_to_remote(const char *remote, const char *port);
 uint8_t net_encode_scancode(uint8_t scancode, bool pressed);
-void net_send_keycode(int remote, uint8_t keycode);
 const char *net_ffmpeg_format_url(const char *proto, const char *ip_string, const char *port);
+int net_udp_socket(const char *remote, const char *port, struct sockaddr *out);
+void net_send_keycode(int remote, uint8_t keycode, struct sockaddr *addr);
 
 #ifdef __cplusplus
 }

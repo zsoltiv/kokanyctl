@@ -86,8 +86,9 @@ int main(int argc, char *argv[])
     }
     struct video_data *video_data = video_init(rend, stream_uri);
     SDL_CreateThread(video_thread, "video", video_data);
-    int remote = net_connect_to_remote(argv[1], PORT_CTL);
-    int sensor = net_connect_to_remote(argv[1], PORT_SENSOR);
+    struct sockaddr remote_addr;
+    int remote = net_udp_socket(argv[1], PORT_CTL, &remote_addr);
+    //int sensor = net_connect_to_remote(argv[1], PORT_SENSOR);
     SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 
     int key_count;
@@ -113,14 +114,14 @@ int main(int argc, char *argv[])
                 case SDL_KEYUP:
                     for(size_t i = 0; i < sizeof(handled_scancodes); i++)
                         if(ev.key.keysym.scancode == handled_scancodes[i]) {
-                            net_send_keycode(remote, net_encode_scancode(ev.key.keysym.scancode, false));
+                            net_send_keycode(remote, net_encode_scancode(ev.key.keysym.scancode, false), &remote_addr);
                             break;
                         }
                     break;
                 case SDL_KEYDOWN:
                     for(size_t i = 0; i < sizeof(handled_scancodes); i++)
                         if(ev.key.keysym.scancode == handled_scancodes[i]) {
-                            net_send_keycode(remote, net_encode_scancode(ev.key.keysym.scancode, true));
+                            net_send_keycode(remote, net_encode_scancode(ev.key.keysym.scancode, true), &remote_addr);
                             break;
                         }
                     break;
@@ -131,12 +132,12 @@ int main(int argc, char *argv[])
         video_update_screen(video_data);
         SDL_RenderCopy(rend, video_get_screen(video_data), NULL, NULL);
         bool co2_present;
-        if(recv(sensor, &co2_present, sizeof(bool), 0) < 0) {
-            if(errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
-                perror("recv()");
-                exit(1);
-            }
-        }
+        //if(recv(sensor, &co2_present, sizeof(bool), 0) < 0) {
+        //    if(errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
+        //        perror("recv()");
+        //        exit(1);
+        //    }
+        //}
         SDL_RenderCopy(rend, co2_present ? present : not_present, NULL, &textrect);
 
         SDL_RenderPresent(rend);
