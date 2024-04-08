@@ -32,8 +32,15 @@
 #include "utils.h"
 
 #define PORT_CTL "1337"
-#define PORT_VIDEO "1338"
 #define PORT_SENSOR "1339"
+
+const struct camera_data {
+    const char *const portstr;
+    SDL_PixelFormatEnum pix_fmt;
+} camera_datas[] = {
+    { "1338", SDL_PIXELFORMAT_IYUV },
+    { "1341", SDL_PIXELFORMAT_IYUV }, // FIXME figure out the right pixel format for the rear camera
+};
 
 const uint8_t handled_scancodes[] = {
     SDL_SCANCODE_W,
@@ -54,7 +61,7 @@ const uint8_t handled_scancodes[] = {
 
 int main(int argc, char *argv[])
 {
-    if(argc != 2)
+    if(argc != 3)
         return 1;
     if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER) < 0)
         ctl_die("SDL init error: %s\n", SDL_GetError());
@@ -79,12 +86,25 @@ int main(int argc, char *argv[])
     if(!rend)
         ctl_die("SDL renderer creation error: %s\n", SDL_GetError());
 
-    const char *stream_uri = net_ffmpeg_format_url("udp", argv[1], PORT_VIDEO);
+    unsigned camera_data_idx = (unsigned)strtoul(argv[2], NULL, 10);
+    if(camera_data_idx >= sizeof(camera_datas) / sizeof(camera_datas[0])) {
+        fprintf(stderr,
+                "%u is not a valid camera index! There are only %zu cameras\n",
+                camera_data_idx,
+                sizeof(camera_datas) / sizeof(camera_datas[0]));
+        return 1;
+    }
+
+    const char *stream_uri = net_ffmpeg_format_url("udp",
+                                                   argv[1],
+                                                   camera_datas[camera_data_idx].portstr);
     if(!stream_uri) {
         fprintf(stderr, "XDG_RUNTIME_DIR must be set\n");
         return 1;
     }
-    struct video_data *video_data = video_init(rend, stream_uri);
+    struct video_data *video_data = video_init(rend,
+                                               stream_uri,
+                                               camera_datas[camera_data_idx].pix_fmt);
     SDL_CreateThread(video_thread, "video", video_data);
     struct sockaddr remote_addr;
     int remote = net_udp_socket(argv[1], PORT_CTL, &remote_addr);

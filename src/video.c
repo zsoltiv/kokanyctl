@@ -80,7 +80,9 @@ void video_update_screen(struct video_data *video_data)
     frame_list_unlock_frame(f, false);
 }
 
-struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
+struct video_data *video_init(SDL_Renderer *rend,
+                              const char *restrict uri,
+                              SDL_PixelFormatEnum sdl_pix_fmt)
 {
     struct video_data *video = malloc(sizeof(struct video_data));
     struct av *av = &video->av; // alias for simplicity
@@ -150,7 +152,7 @@ struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri)
     printf("Pixel format: %s\n", av_get_pix_fmt_name(av->decoder->pix_fmt));
 
     video->screen = SDL_CreateTexture(rend,
-                                      SDL_PIXELFORMAT_IYUV,
+                                      sdl_pix_fmt,
                                       SDL_TEXTUREACCESS_STREAMING,
                                       video->width,
                                       video->height);

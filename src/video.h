@@ -26,12 +26,11 @@ extern "C" {
 
 #include "SDL.h"
 
-// FIXME set to the same as in kokanybot
-#define FRAMES_PER_SEC 24
-
 struct video_data;
 
-struct video_data *video_init(SDL_Renderer *rend, const char *restrict uri);
+struct video_data *video_init(SDL_Renderer *rend,
+                              const char *restrict uri,
+                              SDL_PixelFormatEnum sdl_pix_fmt);
 SDL_Texture *video_get_screen(const struct video_data *video_data);
 void video_update_screen(struct video_data *video_data);
 void video_scan_qr(struct video_data *video);
