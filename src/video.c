@@ -37,6 +37,8 @@
  * over a socket and decodes them for use with SDL2
 */
 
+#define NFRAMES 32
+
 struct av {
     /*
      * internal stuff
@@ -56,6 +58,7 @@ struct video_data {
     SDL_mutex *lock;
     SDL_Texture *screen;
     unsigned framenum;
+    bool has_frame;
 };
 
 SDL_Texture *video_get_screen(const struct video_data *video_data)
@@ -63,12 +66,23 @@ SDL_Texture *video_get_screen(const struct video_data *video_data)
     return video_data->screen;
 }
 
+bool video_has_frame(struct video_data *video)
+{
+    return video->has_frame;
+}
+
 // must be called from main thread
 void video_update_screen(struct video_data *video_data)
 {
     struct frame *f = video_data->frames;
+    int counter = 0;
     while(!((f = frame_list_lock_next(f))->ready)) {
         frame_list_unlock_frame(f, false);
+        if(counter == NFRAMES) {
+            video_data->has_frame = false;
+            return;
+        }
+        counter++;
     }
     SDL_UpdateYUVTexture(video_data->screen, NULL,
                          f->avf->data[0],
@@ -77,6 +91,7 @@ void video_update_screen(struct video_data *video_data)
                          f->avf->linesize[1],
                          f->avf->data[2],
                          f->avf->linesize[2]);
+    video_data->has_frame = true;
     frame_list_unlock_frame(f, false);
 }
 
@@ -139,7 +154,7 @@ struct video_data *video_init(SDL_Renderer *rend,
     avcodec_open2(av->decoder, codec, NULL);
 
     av->pkt = av_packet_alloc();
-    video->frames = frame_list_new(32);
+    video->frames = frame_list_new(NFRAMES);
     video->current = video->frames;
     video->framenum = 0;
     av->qr = qr_init(video->frames,
@@ -159,6 +174,7 @@ struct video_data *video_init(SDL_Renderer *rend,
     if(!video->screen)
         ctl_die("%s\n", SDL_GetError());
 
+    video->has_frame = false;
     //av_log_set_level(AV_LOG_PANIC);
 
     return video;

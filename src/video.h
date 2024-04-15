@@ -24,6 +24,8 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
+
 #include "SDL.h"
 
 struct video_data;
@@ -34,6 +36,7 @@ struct video_data *video_init(SDL_Renderer *rend,
 SDL_Texture *video_get_screen(const struct video_data *video_data);
 void video_update_screen(struct video_data *video_data);
 void video_scan_qr(struct video_data *video);
+bool video_has_frame(struct video_data *video);
 int video_thread(void *arg);
 
 #ifdef __cplusplus
