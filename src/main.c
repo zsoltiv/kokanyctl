@@ -148,17 +148,9 @@ int main(int argc, char *argv[])
             }
         }
 
-        SDL_RenderClear(rend);
         video_update_screen(video_data);
+        SDL_RenderClear(rend);
         SDL_RenderCopy(rend, video_get_screen(video_data), NULL, NULL);
-        bool co2_present;
-        //if(recv(sensor, &co2_present, sizeof(bool), 0) < 0) {
-        //    if(errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
-        //        perror("recv()");
-        //        exit(1);
-        //    }
-        //}
-        SDL_RenderCopy(rend, co2_present ? present : not_present, NULL, &textrect);
 
         SDL_RenderPresent(rend);
     }
