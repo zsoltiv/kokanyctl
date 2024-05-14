@@ -17,10 +17,8 @@
  * along with kokanyctl. If not, see <https://www.gnu.org/licenses/>. 
 */
 
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <errno.h>
 #include <sys/socket.h>
 
 #include "SDL.h"
