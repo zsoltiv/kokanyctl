@@ -119,7 +119,6 @@ void net_send_keycode(int remote, uint8_t keycode, struct sockaddr *addr)
 uint8_t net_encode_scancode(uint8_t scancode, bool pressed)
 {
     uint8_t pressed_u8 = pressed << 7;
-    assert(pressed_u8 == 0x80 || pressed_u8 == 0);
     return (uint8_t)SDL_GetKeyFromScancode(scancode) | pressed_u8;
 }
 
