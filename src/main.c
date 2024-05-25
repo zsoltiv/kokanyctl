@@ -107,18 +107,6 @@ int main(int argc, char *argv[])
     //int sensor = net_connect_to_remote(argv[1], PORT_SENSOR);
     SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 
-    int key_count;
-    const uint8_t *keys = SDL_GetKeyboardState(&key_count);
-
-    SDL_Surface *present_surface = TTF_RenderUTF8_Solid(font, "Gas present", (SDL_Color) {255, 0, 0, 255});
-    SDL_Surface *not_present_surface = TTF_RenderUTF8_Solid(font, "No gas present", (SDL_Color) {0, 255, 0, 255});
-    SDL_Texture *present = SDL_CreateTextureFromSurface(rend, present_surface);
-    SDL_Texture *not_present = SDL_CreateTextureFromSurface(rend, not_present_surface);
-    SDL_FreeSurface(present_surface);
-    SDL_FreeSurface(not_present_surface);
-
-    const SDL_Rect textrect = {0, 0, 300, 64};
-
     bool quit = false;
     SDL_Event ev;
     while(!quit) {
