@@ -96,7 +96,7 @@ void video_update_screen(struct video_data *video_data)
 
 struct video_data *video_init(SDL_Renderer *rend,
                               const char *restrict uri,
-                              SDL_PixelFormatEnum sdl_pix_fmt)
+                              const struct camera_data *camera_data)
 {
     struct video_data *video = malloc(sizeof(struct video_data));
     struct av *av = &video->av; // alias for simplicity
@@ -156,17 +156,21 @@ struct video_data *video_init(SDL_Renderer *rend,
     video->frames = frame_list_new(NFRAMES);
     video->current = video->frames;
     video->framenum = 0;
-    av->qr = qr_init(video->frames,
-                     video->width,
-                     video->height,
-                     av->decoder->pix_fmt);
-    SDL_CreateThread(qr_thread, "qr", av->qr);
-    printf("QR thread initialised\n");
+    if(camera_data->process_qr_codes) {
+        av->qr = qr_init(video->frames,
+                         video->width,
+                         video->height,
+                         av->decoder->pix_fmt);
+        SDL_CreateThread(qr_thread, "qr", av->qr);
+        printf("QR thread initialised\n");
+    } else {
+        av->qr = NULL;
+    }
 
     printf("Pixel format: %s\n", av_get_pix_fmt_name(av->decoder->pix_fmt));
 
     video->screen = SDL_CreateTexture(rend,
-                                      sdl_pix_fmt,
+                                      camera_data->pix_fmt,
                                       SDL_TEXTUREACCESS_STREAMING,
                                       video->width,
                                       video->height);

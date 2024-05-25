@@ -28,16 +28,14 @@
 #include "net.h"
 #include "video.h"
 #include "utils.h"
+#include "camera_data.h"
 
 #define PORT_CTL "1337"
 #define PORT_SENSOR "1339"
 
-const struct camera_data {
-    const char *const portstr;
-    SDL_PixelFormatEnum pix_fmt;
-} camera_datas[] = {
-    { "1338", SDL_PIXELFORMAT_IYUV },
-    { "1341", SDL_PIXELFORMAT_IYUV }, // FIXME figure out the right pixel format for the rear camera
+const struct camera_data camera_datas[] = {
+    { "1338", SDL_PIXELFORMAT_IYUV, true },
+    { "1341", SDL_PIXELFORMAT_IYUV, false }, // FIXME figure out the right pixel format for the rear camera
 };
 
 const uint8_t handled_scancodes[] = {
@@ -102,7 +100,7 @@ int main(int argc, char *argv[])
     }
     struct video_data *video_data = video_init(rend,
                                                stream_uri,
-                                               camera_datas[camera_data_idx].pix_fmt);
+                                               &camera_datas[camera_data_idx]);
     SDL_CreateThread(video_thread, "video", video_data);
     struct sockaddr remote_addr;
     int remote = net_udp_socket(argv[1], PORT_CTL, &remote_addr);
