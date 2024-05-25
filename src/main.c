@@ -35,7 +35,7 @@
 
 const struct camera_data camera_datas[] = {
     { "1338", SDL_PIXELFORMAT_IYUV, true },
-    { "1341", SDL_PIXELFORMAT_IYUV, false }, // FIXME figure out the right pixel format for the rear camera
+    { "1341", SDL_PIXELFORMAT_IYUV, false },
 };
 
 const uint8_t handled_scancodes[] = {
