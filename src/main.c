@@ -101,7 +101,9 @@ int main(int argc, char *argv[])
     struct video_data *video_data = video_init(rend,
                                                stream_uri,
                                                &camera_datas[camera_data_idx]);
-    SDL_CreateThread(video_thread, "video", video_data);
+    if(video_data) {
+        SDL_CreateThread(video_thread, "video", video_data);
+    }
     struct sockaddr remote_addr;
     int remote = net_udp_socket(argv[1], PORT_CTL, &remote_addr);
     //int sensor = net_connect_to_remote(argv[1], PORT_SENSOR);
@@ -123,6 +125,7 @@ int main(int argc, char *argv[])
                         }
                     break;
                 case SDL_KEYDOWN:
+                    puts("aa");
                     for(size_t i = 0; i < sizeof(handled_scancodes); i++)
                         if(ev.key.keysym.scancode == handled_scancodes[i]) {
                             net_send_keycode(remote, net_encode_scancode(ev.key.keysym.scancode, true), &remote_addr);
@@ -132,10 +135,11 @@ int main(int argc, char *argv[])
             }
         }
 
-        video_update_screen(video_data);
         SDL_RenderClear(rend);
-        SDL_RenderCopy(rend, video_get_screen(video_data), NULL, NULL);
-
+        if(video_data) {
+            video_update_screen(video_data);
+            SDL_RenderCopy(rend, video_get_screen(video_data), NULL, NULL);
+        }
         SDL_RenderPresent(rend);
     }
 

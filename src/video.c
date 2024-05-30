@@ -133,10 +133,13 @@ struct video_data *video_init(SDL_Renderer *rend,
 
     if((ret = avformat_open_input(&av->fmt, uri, NULL, &in_opts)) < 0) {
         fprintf(stderr, "avformat_open_input() failed: %s\n", av_err2str(ret));
+        return NULL;
     }
     fprintf(stderr, "Format: %s\n", av->fmt->iformat->long_name);
-    if(avformat_find_stream_info(av->fmt, NULL) < 0)
+    if(avformat_find_stream_info(av->fmt, NULL) < 0) {
         fprintf(stderr, "avformat_find_stream_info() failed\n");
+        return NULL;
+    }
 
     for(unsigned i = 0; i < av->fmt->nb_streams; i++) {
         printf("Stream #%u: %s\n", i, avcodec_get_name(av->fmt->streams[i]->codecpar->codec_id));
