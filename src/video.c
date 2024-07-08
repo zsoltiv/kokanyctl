@@ -103,9 +103,6 @@ struct video_data *video_init(SDL_Renderer *rend,
     int ret;
     avformat_network_init();
     av->fmt = avformat_alloc_context();
-    const AVInputFormat *mjpeg = av_find_input_format("mjpeg");
-    if(!mjpeg)
-        fprintf(stderr, "mjpeg not supported\n");
     AVDictionary *in_opts = NULL;
     if((ret = av_dict_set(&in_opts,
                           "fflags",
