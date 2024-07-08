@@ -128,10 +128,16 @@ struct video_data *video_init(SDL_Renderer *rend,
         return NULL;
     }
 
-    if((ret = avformat_open_input(&av->fmt, uri, NULL, &in_opts)) < 0) {
-        fprintf(stderr, "avformat_open_input() failed: %s\n", av_err2str(ret));
-        return NULL;
-    }
+    // automate reconnecting when AVERROR_INVALIDDATA is returned at the start of a stream
+    do {
+        ret = avformat_open_input(&av->fmt, uri, NULL, &in_opts);
+        if(ret < 0) {
+            fprintf(stderr, "avformat_open_input() failed: %s\n", av_err2str(ret));
+            if(ret != AVERROR_INVALIDDATA)
+                return NULL;
+        }
+    } while(ret == AVERROR_INVALIDDATA);
+
     fprintf(stderr, "Format: %s\n", av->fmt->iformat->long_name);
     if(avformat_find_stream_info(av->fmt, NULL) < 0) {
         fprintf(stderr, "avformat_find_stream_info() failed\n");
