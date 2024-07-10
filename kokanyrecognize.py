@@ -24,8 +24,17 @@ import numpy as np
 from sys import argv, exit
 
 if len(argv) < 2:
-    exit('No IP address provided')
+    print('No camera index provided')
+    exit()
 
+ports = [
+    1338,
+    1341
+]
+
+camidx= int(argv[-1])
+if camidx < 0 || camidx >= len(ports):
+    print(f'bad index {camidx}')
 
 def draw_motion(still, current):
     MOTION_COLOR = [255, 20, 147]  # deeppink
@@ -59,7 +68,8 @@ CLASSES = [('Blas', 'Blasting Agents'),
            ('PO', ''),
            ('RA', 'Radioactive'),
            ('SC', 'Spontaneously Combustible')]
-url = 'udp://' + argv[-1] + ':1338?overrun_nonfatal=1&reuse=1'
+url = f'udp://127.0.0.1:{ports[camidx]}?overrun_nonfatal=1&reuse=1'
+print(url)
 model = cv.dnn.readNet('yolo/model.onnx')
 model.setPreferableBackend(cv.dnn.DNN_BACKEND_OPENCV)
 model.setPreferableTarget(cv.dnn.DNN_TARGET_CPU)

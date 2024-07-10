@@ -12,7 +12,7 @@ BUILDDIR = build
 SRC := $(wildcard $(SRCDIR)/*.c)
 OBJ := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%.o,$(SRC))
 
-.PHONY: clean
+.PHONY: clean rules
 
 all: $(BIN) yolo/model.onnx
 
@@ -25,6 +25,9 @@ $(BUILDDIR)/%.c.o: $(SRCDIR)/%.c
 
 yolo/model.onnx: yolo/model.pt
 	ultralytics export model=$< format=onnx $(UFLAGS) opset=12
+
+rules:
+	install -m 660 rules/* /etc/udev/rules.d/
 
 clean:
 	rm -rf $(BUILDDIR) $(BIN)

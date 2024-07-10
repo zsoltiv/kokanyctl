@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
     }
 
     const char *stream_uri = net_ffmpeg_format_url("udp",
-                                                   argv[1],
+                                                   "127.0.0.1",
                                                    camera_datas[camera_data_idx].portstr);
     if(!stream_uri) {
         fprintf(stderr, "XDG_RUNTIME_DIR must be set\n");
