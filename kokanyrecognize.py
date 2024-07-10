@@ -33,7 +33,7 @@ ports = [
 ]
 
 camidx= int(argv[-1])
-if camidx < 0 || camidx >= len(ports):
+if camidx < 0 or camidx >= len(ports):
     print(f'bad index {camidx}')
 
 def draw_motion(still, current):
@@ -71,11 +71,12 @@ CLASSES = [('Blas', 'Blasting Agents'),
 url = f'udp://127.0.0.1:{ports[camidx]}?overrun_nonfatal=1&reuse=1'
 print(url)
 model = cv.dnn.readNet('yolo/model.onnx')
-model.setPreferableBackend(cv.dnn.DNN_BACKEND_OPENCV)
-model.setPreferableTarget(cv.dnn.DNN_TARGET_CPU)
-
+print(model)
+#model.setPreferableBackend(cv.dnn.DNN_BACKEND_OPENCV)
+#model.setPreferableTarget(cv.dnn.DNN_TARGET_CPU)
 
 def draw_bounding_box(frame, x, y, w, h, obj):
+    print('boxing')
     WIDTH_SCALE = frame.shape[1] / IMGSZ
     HEIGHT_SCALE = frame.shape[0] / IMGSZ
     x = int(x * WIDTH_SCALE)
@@ -104,10 +105,11 @@ def box(row):
 
 
 def feed_model(frame):
-    CONFIDENCE_THRESHOLD = 0.25
+    CONFIDENCE_THRESHOLD = 0.1
     blob = cv.dnn.blobFromImage(frame, 1 / 255, (IMGSZ, IMGSZ), swapRB=True)
     model.setInput(blob)
-    predictions = np.transpose(model.forward()[0])
+    fwd = model.forward()
+    predictions = np.transpose(fwd[0])
     rows = predictions.shape[0]
     boxes = []
     confidences = []
@@ -143,12 +145,14 @@ if cap.get(cv.CAP_PROP_CONVERT_RGB) == 0:
 still = None
 framenum = 0
 while True:
-    ret, frame = cap.read()
+    #ret, frame = cap.read()
+    ret=True
+    frame = cv.imread('pelda.jpg', cv.IMREAD_COLOR)
     orig = frame.copy()
     if ret is False:
         continue
-    draw_motion(still, frame)
     feed_model(frame)
+    #draw_motion(still, frame)
     if still is not None:
         cv.imshow('motion', frame)
         cv.waitKey(1)
