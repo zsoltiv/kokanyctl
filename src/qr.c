@@ -46,7 +46,7 @@ struct qr *qr_init(struct frame *f,
                    enum AVPixelFormat pix_fmt)
 {
     struct qr *qr = malloc(sizeof(struct qr));
-    qr->processor = zbar_processor_create(0);
+    qr->processor = zbar_processor_create(1);
     qr->frames = f;
     zbar_processor_set_config(qr->processor, 0, ZBAR_CFG_ENABLE, 0);
     zbar_processor_set_config(qr->processor, ZBAR_QRCODE, ZBAR_CFG_ENABLE, 1);
