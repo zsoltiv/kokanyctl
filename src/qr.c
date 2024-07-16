@@ -52,7 +52,7 @@ struct qr *qr_init(struct frame *f,
     zbar_processor_set_config(qr->processor, 0, ZBAR_CFG_ENABLE, 0);
     zbar_processor_set_config(qr->processor, ZBAR_QRCODE, ZBAR_CFG_ENABLE, 1);
     qr->img = zbar_image_create();
-    qr->outfile = fopen("codes.txt", "w");
+    qr->outfile = fopen(outfilepath, "w");
     if(!qr->outfile)
         fprintf(stderr, "failed to open codes.txt\n");
     uint32_t fourcc = avcodec_pix_fmt_to_codec_tag(pix_fmt);
