@@ -11,6 +11,7 @@ extern "C" {
 
 struct camera_data {
     const char *const portstr;
+    const char *qr_file;
     SDL_PixelFormatEnum pix_fmt;
     bool process_qr_codes;
 };

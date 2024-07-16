@@ -34,8 +34,8 @@
 #define PORT_SENSOR "1339"
 
 const struct camera_data camera_datas[] = {
-    { "1338", SDL_PIXELFORMAT_IYUV, true },
-    { "1341", SDL_PIXELFORMAT_IYUV, true },
+    { "1338", "codes_front.txt", SDL_PIXELFORMAT_IYUV, true },
+    { "1341",  "codes_rear.txt", SDL_PIXELFORMAT_IYUV, true },
 };
 
 const uint8_t handled_scancodes[] = {

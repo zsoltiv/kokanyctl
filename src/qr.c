@@ -43,7 +43,8 @@ struct qr {
 struct qr *qr_init(struct frame *f,
                    const unsigned int width,
                    const unsigned int height,
-                   enum AVPixelFormat pix_fmt)
+                   enum AVPixelFormat pix_fmt,
+                   const char *outfilepath)
 {
     struct qr *qr = malloc(sizeof(struct qr));
     qr->processor = zbar_processor_create(1);

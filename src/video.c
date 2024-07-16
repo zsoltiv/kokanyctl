@@ -166,7 +166,8 @@ struct video_data *video_init(SDL_Renderer *rend,
         av->qr = qr_init(video->frames,
                          video->width,
                          video->height,
-                         av->decoder->pix_fmt);
+                         av->decoder->pix_fmt,
+                         camera_data->qr_file);
         SDL_CreateThread(qr_thread, "qr", av->qr);
         printf("QR thread initialised\n");
     } else {
