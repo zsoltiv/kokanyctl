@@ -22,7 +22,6 @@
 #include <sys/socket.h>
 
 #include "SDL.h"
-#include "SDL_events.h"
 #include "SDL_ttf.h"
 
 #include "net.h"
@@ -55,6 +54,8 @@ const uint8_t handled_scancodes[] = {
     SDL_SCANCODE_8,
 };
 
+SDL_Texture *servo_text_lut[10]; // LUT for prerendered servo name textures
+
 int main(int argc, char *argv[])
 {
     if(argc != 3)
@@ -81,6 +82,24 @@ int main(int argc, char *argv[])
                                             SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if(!rend)
         ctl_die("SDL renderer creation error: %s\n", SDL_GetError());
+
+    for(int i = 0; i < sizeof(servo_text_lut) / sizeof(servo_text_lut[0]); i++) {
+        const SDL_Color bg = {0};
+        const SDL_Color fg = {
+            .r = 0xFF,
+            .g = 0xC0,
+            .b = 0xCB,
+            .a = 0xFF,
+        };
+        const char text[] = { i + '0', '\0' };
+        printf("generated text %s\n", text);
+        SDL_Surface *text_surf = TTF_RenderText(font, text, fg, bg);
+        if(!text_surf)
+            ctl_die("TTR_RenderText() failed: %s\n", TTF_GetError());
+        servo_text_lut[i] = SDL_CreateTextureFromSurface(rend, text_surf);
+        if(!servo_text_lut[i])
+            ctl_die("SDL_CreateTextureFromSurface() failed: %s\n", SDL_GetError());
+    }
 
     unsigned camera_data_idx = (unsigned)strtoul(argv[2], NULL, 10);
     if(camera_data_idx >= sizeof(camera_datas) / sizeof(camera_datas[0])) {
@@ -110,6 +129,7 @@ int main(int argc, char *argv[])
     SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 
     bool quit = false;
+    int servo = 0;
     SDL_Event ev;
     while(!quit) {
         while(SDL_PollEvent(&ev)) {
@@ -121,11 +141,12 @@ int main(int argc, char *argv[])
                     for(size_t i = 0; i < sizeof(handled_scancodes); i++)
                         if(ev.key.keysym.scancode == handled_scancodes[i]) {
                             net_send_keycode(remote, net_encode_scancode(ev.key.keysym.scancode, false), &remote_addr);
+                            if(isdigit(SDL_GetKeyFromScancode(ev.key.keysym.scancode)))
+                                servo = SDL_GetKeyFromScancode(ev.key.keysym.scancode) - '0';
                             break;
                         }
                     break;
                 case SDL_KEYDOWN:
-                    puts("aa");
                     for(size_t i = 0; i < sizeof(handled_scancodes); i++)
                         if(ev.key.keysym.scancode == handled_scancodes[i]) {
                             net_send_keycode(remote, net_encode_scancode(ev.key.keysym.scancode, true), &remote_addr);
@@ -140,6 +161,7 @@ int main(int argc, char *argv[])
             video_update_screen(video_data);
             SDL_RenderCopy(rend, video_get_screen(video_data), NULL, NULL);
         }
+        SDL_RenderCopy(rend, servo_text_lut[servo], NULL, &(SDL_Rect){0,0,128,128});
         SDL_RenderPresent(rend);
     }
 
