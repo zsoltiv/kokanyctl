@@ -84,7 +84,6 @@ int main(int argc, char *argv[])
         ctl_die("SDL renderer creation error: %s\n", SDL_GetError());
 
     for(int i = 0; i < sizeof(servo_text_lut) / sizeof(servo_text_lut[0]); i++) {
-        const SDL_Color bg = {0};
         const SDL_Color fg = {
             .r = 0xFF,
             .g = 0xC0,
@@ -93,7 +92,7 @@ int main(int argc, char *argv[])
         };
         const char text[] = { i + '0', '\0' };
         printf("generated text %s\n", text);
-        SDL_Surface *text_surf = TTF_RenderText(font, text, fg, bg);
+        SDL_Surface *text_surf = TTF_RenderUTF8_Solid(font, text, fg);
         if(!text_surf)
             ctl_die("TTR_RenderText() failed: %s\n", TTF_GetError());
         servo_text_lut[i] = SDL_CreateTextureFromSurface(rend, text_surf);
