@@ -114,7 +114,7 @@ struct video_data *video_init(SDL_Renderer *rend,
                           0)) < 0 ||
        (ret = av_dict_set(&in_opts,
                           "fifo_size",
-                          "40960", // 4096 * 10
+                          "50000000", // 4096 * 10
                           0)) < 0 ||
        (ret = av_dict_set(&in_opts,
                           "reuse",
